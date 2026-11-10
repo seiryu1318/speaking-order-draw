@@ -8,7 +8,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="제비뽑기">
   <title>제비뽑기</title>
-  <link rel="manifest" href="manifest.webmanifest?v=8">
+  <link rel="manifest" href="manifest.webmanifest?v=9">
   <link rel="icon" sizes="192x192" href="icon-192.png">
   <link rel="apple-touch-icon" sizes="180x180" href="icon-180.png">
   <style>
@@ -54,6 +54,13 @@
     td:nth-child(4), th:nth-child(4) { width:26%; }
     td.order-cell, tbody tr:nth-child(even) td.order-cell { background:#fff0b8; }
     th.order-head { background:#f3bd39; color:#112a40; }
+    .name-with-exclude { display:flex; align-items:center; justify-content:center; gap:14px; }
+    .exclude-label { display:inline-flex; align-items:center; gap:5px; padding:5px 8px; border:1px solid #b7c3cd; border-radius:7px; background:#fff; color:#7d2d2d; font-size:15px; font-weight:900; white-space:nowrap; cursor:pointer; }
+    .exclude-label input { width:21px; height:21px; margin:0; accent-color:#b33b3b; }
+    .excluded-row td, tbody tr:nth-child(even).excluded-row td { background:#e4e7e9; color:#7a8289; }
+    .excluded-row td:not(.order-cell) { text-decoration:line-through; }
+    .excluded-row .exclude-label, .excluded-row input { text-decoration:none; }
+    .excluded-row td.order-cell { background:#d9dddf; }
     .rank { display:inline-grid; place-items:center; min-width:64px; height:54px; padding:0 13px; border-radius:27px; background:var(--navy); color:#fff; font-size:30px; line-height:1; font-weight:1000; box-shadow:0 3px 0 rgba(0,0,0,.18); }
     .rank.top { background:#b4372e; }
     .rank.empty { background:#9aa8b4; }
@@ -154,18 +161,18 @@
 <script>
 const DEFAULT9 = [
   ['7','20725','한태민'],['7','20726','홍제성'],['7','20727','홍준서'],['7','20728','황수현'],['7','20729','황유찬'],['7','20730','황인성'],
-  ['8','20817','윤채환'],['8','20818','이성현'],['8','20819','이승원'],['8','20821','이하주'],['8','20823','임국중'],['8','20824','임종민'],['8','20831','권혁규'],['8','20832','김래현'],
+  ['8','20817','윤채환'],['8','20818','이성현'],['8','20819','이승원'],['8','20820','이승준',true],['8','20821','이하주'],['8','20823','임국중'],['8','20824','임종민'],['8','20831','권혁규'],['8','20832','김래현'],
   ['9','20923','조민수'],['9','20924','조세현'],['9','20925','최동연'],['9','20926','허석민'],['9','20927','현준'],['9','20928','황인우'],['9','20929','김하준']
 ];
 const DEFAULT11 = [
-  ['11','21101','김동주'],['11','21102','김민규'],['11','21105','김찬목'],['11','21106','박준우'],['11','21107','서형진'],['11','21108','신수환'],['11','21109','신정헌'],['11','21110','신정훈'],['11','21112','오도겸'],['11','21113','오정근'],['11','21114','오한새'],['11','21115','원준호'],['11','21116','이경욱'],['11','21117','이원찬'],['11','21118','이유찬'],['11','21119','이종수'],['11','21120','이준우'],['11','21121','이태영'],['11','21122','이혜성'],['11','21123','장윤서'],['11','21124','정권'],['11','21127','최은호'],['11','21128','최호영'],['11','21129','하준우'],['11','21130','한선규'],['11','21131','홍준우'],['11','21132','최민호']
+  ['11','21101','김동주'],['11','21102','김민규'],['11','21104','김진우',true],['11','21105','김찬목'],['11','21106','박준우'],['11','21107','서형진'],['11','21108','신수환'],['11','21109','신정헌'],['11','21110','신정훈'],['11','21112','오도겸'],['11','21113','오정근'],['11','21114','오한새'],['11','21115','원준호'],['11','21116','이경욱'],['11','21117','이원찬'],['11','21118','이유찬'],['11','21119','이종수'],['11','21120','이준우'],['11','21121','이태영'],['11','21122','이혜성'],['11','21123','장윤서'],['11','21124','정권'],['11','21127','최은호'],['11','21128','최호영'],['11','21129','하준우'],['11','21130','한선규'],['11','21131','홍준우'],['11','21132','최민호']
 ];
 const STORE_KEY = 'speaking-draw-v4';
-const makePeople = list => list.map((s,i) => ({ classNo:s[0], studentNo:s[1], name:s[2], order:i+1 }));
-const blankPeople = count => Array.from({length:count}, (_,i) => ({ classNo:'', studentNo:'', name:'', order:i+1 }));
+const makePeople = list => { let n=0; return list.map(s => ({ classNo:s[0], studentNo:s[1], name:s[2], excluded:Boolean(s[3]), order:s[3]?null:++n })); };
+const blankPeople = count => Array.from({length:count}, (_,i) => ({ classNo:'', studentNo:'', name:'', excluded:false, order:i+1 }));
 function makeRoom9() {
   const counts={};
-  return DEFAULT9.map(([classNo,studentNo,name])=>({classNo,studentNo,name,order:(counts[classNo]=(counts[classNo]||0)+1)}));
+  return DEFAULT9.map(([classNo,studentNo,name,excluded=false])=>({classNo,studentNo,name,excluded,order:excluded?null:(counts[classNo]=(counts[classNo]||0)+1)}));
 }
 const freshState = () => ({ room9:makeRoom9(), room11:makePeople(DEFAULT11), classOrder:['7','8','9'], customTabs:[{id:'direct',name:'직접 입력',type:'combined',people:blankPeople(10)}], active:'room9' });
 let state = freshState();
@@ -173,11 +180,25 @@ try {
   const saved = JSON.parse(localStorage.getItem(STORE_KEY));
   if (saved && Array.isArray(saved.room9) && Array.isArray(saved.room11) && Array.isArray(saved.customTabs)) state = saved;
 } catch (_) {}
+function mergeRoster(current, defaults) {
+  const old=Array.isArray(current)?current:[];
+  return defaults.map(person=>{
+    const saved=old.find(p=>p.studentNo===person.studentNo);
+    if(!saved) return person;
+    return {...person,order:saved.order,excluded:typeof saved.excluded==='boolean'?saved.excluded:person.excluded};
+  });
+}
+state.room9=mergeRoster(state.room9,makeRoom9());
+state.room11=mergeRoster(state.room11,makePeople(DEFAULT11));
+['7','8','9'].forEach(classNo=>resequenceOrders(state.room9.filter(p=>p.classNo===classNo)));
+resequenceOrders(state.room11);
 if (!state.customTabs.some(t => t.id === 'direct')) state.customTabs.unshift({id:'direct',name:'직접 입력',type:'combined',people:blankPeople(10)});
 state.customTabs.forEach(tab=>{
   tab.type=tab.type==='split'?'split':'combined';
   if(tab.type==='combined'&&!Array.isArray(tab.people)) tab.people=blankPeople(10);
   if(tab.type==='split'&&!Array.isArray(tab.classes)) tab.classes=[];
+  if(tab.type==='combined') tab.people.forEach(p=>p.excluded=Boolean(p.excluded));
+  if(tab.type==='split') tab.classes.forEach(group=>group.people.forEach(p=>p.excluded=Boolean(p.excluded)));
 });
 
 function saveState() { localStorage.setItem(STORE_KEY, JSON.stringify(state)); }
@@ -195,8 +216,14 @@ function shuffledNumbers(count) {
   return out;
 }
 function assignRandomOrders(people) {
-  const nums=shuffledNumbers(people.length);
-  people.forEach((p,i)=>p.order=nums[i]);
+  const active=people.filter(p=>!p.excluded), nums=shuffledNumbers(active.length);
+  people.forEach(p=>{if(p.excluded)p.order=null;});
+  active.forEach((p,i)=>p.order=nums[i]);
+}
+function resequenceOrders(people) {
+  const active=people.filter(p=>!p.excluded).sort((a,b)=>(Number(a.order)||9999)-(Number(b.order)||9999));
+  people.forEach(p=>{if(p.excluded)p.order=null;});
+  active.forEach((p,i)=>p.order=i+1);
 }
 function escapeHtml(v) { return String(v ?? '').replace(/[&<>\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c])); }
 function deriveClass(no) { const s=String(no).trim(); return /^\d{5}$/.test(s) ? String(Number(s.slice(1,3))) : ''; }
@@ -204,8 +231,8 @@ function rankMarkup(order) {
   const n=Number(order);
   return n ? `<span class="rank ${n<=3?'top':''}">${n}</span>` : '<span class="rank empty">-</span>';
 }
-function fixedRows(people) {
-  return people.map(p=>`<tr><td>${escapeHtml(p.classNo)}</td><td>${escapeHtml(p.studentNo)}</td><td>${escapeHtml(p.name)}</td><td class="order-cell">${rankMarkup(p.order)}</td></tr>`).join('');
+function fixedRows(people,listName) {
+  return people.map(p=>`<tr class="${p.excluded?'excluded-row':''}"><td>${escapeHtml(p.classNo)}</td><td>${escapeHtml(p.studentNo)}</td><td><div class="name-with-exclude"><span>${escapeHtml(p.name)}</span><label class="exclude-label"><input class="fixed-exclude" type="checkbox" data-list="${listName}" data-student="${escapeHtml(p.studentNo)}" ${p.excluded?'checked':''}>제외</label></div></td><td class="order-cell">${rankMarkup(p.order)}</td></tr>`).join('');
 }
 function tableHead() { return '<thead><tr><th>반</th><th>학번</th><th>이름</th><th class="order-head">순서</th></tr></thead>'; }
 
@@ -213,18 +240,18 @@ function renderRoom9() {
   const root=document.querySelector('#room9Capture');
   root.innerHTML='<h2 class="capture-title">강의실 9</h2>'+state.classOrder.map(c=>{
     const people=state.room9.filter(p=>p.classNo===c);
-    return `<article class="class-card"><div class="class-head"><h2>${c}반</h2><button class="btn" data-action="shuffle-class" data-class="${c}" type="button">${c}반 순서 섞기</button></div><div class="table-wrap"><table>${tableHead()}<tbody>${fixedRows(people)}</tbody></table></div></article>`;
+    return `<article class="class-card"><div class="class-head"><h2>${c}반</h2><button class="btn" data-action="shuffle-class" data-class="${c}" type="button">${c}반 순서 섞기</button></div><div class="table-wrap"><table>${tableHead()}<tbody>${fixedRows(people,'room9')}</tbody></table></div></article>`;
   }).join('');
   state.classOrder.forEach((c,i)=>{ const input=document.querySelector(`#classOrder input[data-class="${c}"]`); if(input) input.value=i+1; });
 }
 function renderRoom11() {
-  document.querySelector('#room11Capture').innerHTML=`<h2 class="capture-title">강의실 11</h2><article class="class-card"><div class="class-head"><h2>11반</h2></div><div class="table-wrap"><table>${tableHead()}<tbody>${fixedRows(state.room11)}</tbody></table></div></article>`;
+  document.querySelector('#room11Capture').innerHTML=`<h2 class="capture-title">강의실 11</h2><article class="class-card"><div class="class-head"><h2>11반</h2></div><div class="table-wrap"><table>${tableHead()}<tbody>${fixedRows(state.room11,'room11')}</tbody></table></div></article>`;
 }
 function customRows(tab) {
-  return tab.people.map((p,i)=>`<tr><td><input class="entry class-entry" data-i="${i}" value="${escapeHtml(p.classNo)}" aria-label="${i+1}번 반"></td><td><input class="entry no-entry" data-i="${i}" value="${escapeHtml(p.studentNo)}" inputmode="numeric" aria-label="${i+1}번 학번"></td><td><input class="entry name-entry" data-i="${i}" value="${escapeHtml(p.name)}" aria-label="${i+1}번 이름"></td><td class="order-cell">${rankMarkup(p.order)}</td></tr>`).join('');
+  return tab.people.map((p,i)=>`<tr class="${p.excluded?'excluded-row':''}"><td><input class="entry class-entry" data-i="${i}" value="${escapeHtml(p.classNo)}" aria-label="${i+1}번 반"></td><td><input class="entry no-entry" data-i="${i}" value="${escapeHtml(p.studentNo)}" inputmode="numeric" aria-label="${i+1}번 학번"></td><td><div class="name-with-exclude"><input class="entry name-entry" data-i="${i}" value="${escapeHtml(p.name)}" aria-label="${i+1}번 이름"><label class="exclude-label"><input class="custom-exclude" type="checkbox" data-i="${i}" ${p.excluded?'checked':''}>제외</label></div></td><td class="order-cell">${rankMarkup(p.order)}</td></tr>`).join('');
 }
 function splitRows(group) {
-  return group.people.map((p,i)=>`<tr><td>${escapeHtml(group.classNo)}</td><td><input class="entry split-no-entry" data-i="${i}" value="${escapeHtml(p.studentNo)}" inputmode="numeric" aria-label="${group.classNo}반 ${i+1}번 학번"></td><td><input class="entry split-name-entry" data-i="${i}" value="${escapeHtml(p.name)}" aria-label="${group.classNo}반 ${i+1}번 이름"></td><td class="order-cell">${rankMarkup(p.order)}</td></tr>`).join('');
+  return group.people.map((p,i)=>`<tr class="${p.excluded?'excluded-row':''}"><td>${escapeHtml(group.classNo)}</td><td><input class="entry split-no-entry" data-i="${i}" value="${escapeHtml(p.studentNo)}" inputmode="numeric" aria-label="${group.classNo}반 ${i+1}번 학번"></td><td><div class="name-with-exclude"><input class="entry split-name-entry" data-i="${i}" value="${escapeHtml(p.name)}" aria-label="${group.classNo}반 ${i+1}번 이름"><label class="exclude-label"><input class="split-exclude" type="checkbox" data-i="${i}" ${p.excluded?'checked':''}>제외</label></div></td><td class="order-cell">${rankMarkup(p.order)}</td></tr>`).join('');
 }
 function splitPanelMarkup(tab,canDelete) {
   const cards=tab.classes.map(group=>`<article class="class-card split-class-card" data-class-id="${group.id}"><div class="class-head"><h2>${escapeHtml(group.classNo)}반</h2><div class="class-actions"><label>인원 수<input class="split-count" type="number" min="1" max="100" value="${group.people.length}" inputmode="numeric"></label><button class="btn secondary" data-action="split-resize" type="button">입력칸 만들기</button><button class="btn" data-action="split-shuffle" type="button">순서 섞기</button><button class="btn light" data-action="split-clear" type="button">명단 초기화</button><button class="btn danger" data-action="split-delete-class" type="button">반 삭제</button></div></div><div class="table-wrap"><table>${tableHead()}<tbody>${splitRows(group)}</tbody></table></div></article>`).join('');
@@ -258,7 +285,7 @@ function syncCustomPanel(panel) {
     panel.querySelectorAll('.split-class-card').forEach(card=>{
       const group=tab.classes.find(c=>c.id===card.dataset.classId); if(!group) return;
       card.querySelectorAll('tbody tr').forEach((tr,i)=>{
-        if(group.people[i]) Object.assign(group.people[i],{classNo:group.classNo,studentNo:tr.querySelector('.split-no-entry')?.value.trim()||'',name:tr.querySelector('.split-name-entry')?.value.trim()||''});
+        if(group.people[i]) Object.assign(group.people[i],{classNo:group.classNo,studentNo:tr.querySelector('.split-no-entry')?.value.trim()||'',name:tr.querySelector('.split-name-entry')?.value.trim()||'',excluded:Boolean(tr.querySelector('.split-exclude')?.checked)});
       });
     });
     saveState(); return;
@@ -267,7 +294,7 @@ function syncCustomPanel(panel) {
     const c=tr.querySelector('.class-entry')?.value.trim()||'';
     const no=tr.querySelector('.no-entry')?.value.trim()||'';
     const name=tr.querySelector('.name-entry')?.value.trim()||'';
-    if(tab.people[i]) Object.assign(tab.people[i],{classNo:c||deriveClass(no),studentNo:no,name});
+    if(tab.people[i]) Object.assign(tab.people[i],{classNo:c||deriveClass(no),studentNo:no,name,excluded:Boolean(tr.querySelector('.custom-exclude')?.checked)});
   });
   saveState();
 }
@@ -280,6 +307,24 @@ document.querySelector('#panels').addEventListener('input',e=>{
     if(!classInput.value.trim()) classInput.value=deriveClass(e.target.value);
   }
   syncCustomPanel(panel);
+});
+document.querySelector('#panels').addEventListener('change',e=>{
+  if(e.target.classList.contains('fixed-exclude')){
+    const list=e.target.dataset.list==='room11'?state.room11:state.room9;
+    const person=list.find(p=>p.studentNo===e.target.dataset.student); if(!person) return;
+    person.excluded=e.target.checked;
+    if(e.target.dataset.list==='room11') resequenceOrders(state.room11);
+    else resequenceOrders(state.room9.filter(p=>p.classNo===person.classNo));
+    saveState(); e.target.dataset.list==='room11'?renderRoom11():renderRoom9(); return;
+  }
+  const panel=e.target.closest('.custom-panel'); if(!panel) return;
+  const tab=getCustom(panel.dataset.customId); syncCustomPanel(panel);
+  if(e.target.classList.contains('custom-exclude')) resequenceOrders(tab.people);
+  if(e.target.classList.contains('split-exclude')){
+    const group=tab.classes.find(c=>c.id===e.target.closest('.split-class-card').dataset.classId);
+    resequenceOrders(group.people);
+  }
+  saveState(); renderCustomTabs();
 });
 document.querySelector('#panels').addEventListener('click',async e=>{
   const btn=e.target.closest('[data-action]'); if(!btn) return;
@@ -368,7 +413,7 @@ installBtn.addEventListener('click',async()=>{
   else alert('Chrome 주소창 오른쪽의 설치 아이콘을 눌러 설치하세요.');
 });
 if('serviceWorker' in navigator&&location.protocol!=='file:') {
-  navigator.serviceWorker.register('./service-worker.js?v=8',{updateViaCache:'none'}).then(reg=>reg.update());
+  navigator.serviceWorker.register('./service-worker.js?v=9',{updateViaCache:'none'}).then(reg=>reg.update());
 }
 renderAll();
 </script>
