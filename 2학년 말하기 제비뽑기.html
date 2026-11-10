@@ -8,7 +8,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="제비뽑기">
   <title>제비뽑기</title>
-  <link rel="manifest" href="manifest.webmanifest?v=13">
+  <link rel="manifest" href="manifest.webmanifest?v=14">
   <link rel="icon" sizes="192x192" href="icon-192.png">
   <link rel="apple-touch-icon" sizes="180x180" href="icon-180.png">
   <style>
@@ -38,6 +38,9 @@
     .tab-close:hover { background:#842a2a; }
     .tab-close:active { transform:translateY(-48%); box-shadow:none; }
     .add-tab { flex:0 0 auto; border:0; border-left:1px solid var(--line); background:var(--navy); color:#fff; padding:14px 19px; font-size:19px; font-weight:900; cursor:pointer; }
+    #addTabBtn { min-width:58px; color:var(--warm); font-size:30px; line-height:1; }
+    .fixed-direct-tab { color:#fff; }
+    .fixed-direct-tab.active { background:var(--blue); box-shadow:inset 0 -6px 0 var(--warm); }
     main { padding:26px max(28px,env(safe-area-inset-right)) calc(52px + env(safe-area-inset-bottom)) max(28px,env(safe-area-inset-left)); }
     .panel { display:none; }
     .panel.active { display:block; }
@@ -80,6 +83,13 @@
     .direct-setup { display:flex; flex-wrap:wrap; align-items:end; gap:11px; margin-bottom:20px; }
     .direct-setup label { display:grid; gap:7px; font-size:19px; font-weight:900; }
     .direct-setup input { width:135px; border:2px solid #8fa5b7; border-radius:8px; padding:10px; font-size:20px; font-weight:800; }
+    .direct-actions { display:flex; flex-wrap:wrap; gap:11px; margin:-8px 0 20px; }
+    .save-tab-row { display:flex; margin:-8px 0 20px; padding:13px; border:2px solid #9eb3c3; border-radius:11px; background:#eef4f8; }
+    .save-tab-row .btn { min-width:180px; background:var(--navy); }
+    .add-rows-btn { background:#7a8894; opacity:.62; transition:background-color .2s ease,opacity .2s ease,transform .2s ease,box-shadow .2s ease; }
+    .add-rows-btn:disabled { cursor:default; box-shadow:none; }
+    .add-rows-btn.is-ready { background:#d36d22; opacity:1; animation:addReady .72s ease-in-out infinite alternate; }
+    @keyframes addReady { from { transform:translateY(0); box-shadow:0 3px 0 rgba(0,0,0,.16),0 0 0 0 rgba(211,109,34,.22); } to { transform:translateY(-2px); box-shadow:0 5px 0 rgba(0,0,0,.16),0 0 0 7px rgba(211,109,34,.14); } }
     .entry { width:100%; border:2px solid #b8c6d1; border-radius:7px; padding:10px 8px; text-align:center; background:#fff; font-size:20px; font-weight:750; }
     .entry:focus { outline:3px solid #6ba3ce; border-color:#6ba3ce; }
     dialog { width:min(470px,calc(100% - 30px)); border:0; border-radius:15px; padding:0; box-shadow:0 18px 70px rgba(0,0,0,.35); }
@@ -121,7 +131,8 @@
       .tab { min-width:135px; font-size:18px; padding:15px 12px 11px; }
       .install { padding:9px 12px; }
       .toolbar, .direct-setup, .split-add { align-items:stretch; }
-      .toolbar .btn, .direct-setup .btn, .split-add .btn { flex:1 1 145px; }
+      .toolbar .btn, .direct-setup .btn, .direct-actions .btn, .split-add .btn { flex:1 1 145px; }
+      .save-tab-row .btn { width:100%; }
       .class-head { align-items:flex-start; flex-direction:column; padding:11px 12px; }
       .class-head h2 { font-size:24px; }
       .class-actions { width:100%; justify-content:flex-start; }
@@ -168,8 +179,8 @@
   </header>
   <nav id="tabs" aria-label="탭 선택">
     <span id="sortableTabsNav"></span>
-    <span class="custom-tab-item" data-base-tab="direct"><button class="tab" data-tab="direct" type="button">명단 바로 입력</button><button class="tab-close" data-close-tab="direct" type="button" aria-label="명단 바로 입력 탭 삭제">×</button></span>
-    <button class="add-tab" id="addTabBtn" type="button">+ 탭 추가</button>
+    <button class="tab add-tab fixed-direct-tab" data-base-tab="direct" data-tab="direct" type="button">명단 바로 입력</button>
+    <button class="add-tab" id="addTabBtn" type="button" aria-label="탭 추가">+</button>
   </nav>
   <main id="panels">
     <section class="panel active" id="room9">
@@ -259,6 +270,7 @@ function mergeRoster(current, defaults) {
 state.room9=mergeRoster(state.room9,makeRoom9());
 state.room11=mergeRoster(state.room11,makePeople(DEFAULT11));
 if(!Array.isArray(state.hiddenTabs)) state.hiddenTabs=[];
+state.hiddenTabs=state.hiddenTabs.filter(id=>id!=='direct');
 ['7','8','9'].forEach(classNo=>resequenceOrders(state.room9.filter(p=>p.classNo===classNo)));
 resequenceOrders(state.room11);
 if (!state.customTabs.some(t => t.id === 'direct')) state.customTabs.unshift({id:'direct',name:'명단 바로 입력',type:'combined',people:blankPeople(10)});
@@ -333,8 +345,8 @@ function splitPanelMarkup(tab) {
 }
 function customPanelMarkup(tab) {
   if(tab.type==='split') return splitPanelMarkup(tab);
-  const saveAsTab=tab.id==='direct'?'<button class="btn secondary" data-action="save-direct-tab" type="button">탭으로 저장</button>':'';
-  return `<div class="direct-setup"><label>전체 인원 수<input class="custom-count" type="number" min="1" max="200" value="${tab.people.length}" inputmode="numeric"></label><button class="btn secondary" data-action="custom-resize" type="button">입력칸 만들기</button><button class="btn" data-action="custom-shuffle" type="button">전체 순서 섞기</button>${saveAsTab}<button class="btn light" data-action="custom-clear" type="button">명단 초기화</button><button class="btn" data-action="save-image" type="button">이미지 저장</button></div><div class="capture-area"><h2 class="capture-title">${escapeHtml(tab.name)}</h2><article class="class-card"><div class="table-wrap"><table>${tableHead()}<tbody>${customRows(tab)}</tbody></table></div></article></div>`;
+  const saveAsTab=tab.id==='direct'?'<div class="save-tab-row"><button class="btn" data-action="save-direct-tab" type="button">탭으로 저장</button></div>':'';
+  return `<div class="direct-setup"><label>추가할 인원 수<input class="custom-count" type="number" min="1" max="200" value="" placeholder="1" inputmode="numeric"></label><button class="btn add-rows-btn" data-action="custom-add" type="button" disabled>입력칸 추가</button></div><div class="direct-actions"><button class="btn" data-action="custom-shuffle" type="button">전체 순서 섞기</button><button class="btn light" data-action="custom-clear" type="button">명단 초기화</button><button class="btn" data-action="save-image" type="button">이미지 저장</button></div>${saveAsTab}<div class="capture-area"><h2 class="capture-title">${escapeHtml(tab.name)}</h2><article class="class-card"><div class="table-wrap"><table>${tableHead()}<tbody>${customRows(tab)}</tbody></table></div></article></div>`;
 }
 const baseTabNames={room9:'강의실 9',room11:'강의실 11'};
 function sortableTabMarkup(id) {
@@ -348,11 +360,11 @@ function renderCustomTabs() {
   state.tabOrder=state.tabOrder.filter(id=>sortableIds.includes(id));
   sortableIds.forEach(id=>{ if(!state.tabOrder.includes(id)) state.tabOrder.push(id); });
   document.querySelector('#sortableTabsNav').innerHTML=state.tabOrder.map(sortableTabMarkup).join('');
-  document.querySelector('[data-base-tab="direct"]').hidden=state.hiddenTabs.includes('direct');
+  document.querySelector('[data-base-tab="direct"]').hidden=false;
   document.querySelector('#customPanels').innerHTML=extras.map(t=>`<section class="panel custom-panel" id="${t.id}" data-custom-id="${t.id}">${customPanelMarkup(t)}</section>`).join('');
   const direct=state.customTabs.find(t=>t.id==='direct');
   document.querySelector('#direct').innerHTML=customPanelMarkup(direct);
-  const availableTabs=[...state.tabOrder,...(state.hiddenTabs.includes('direct')?[]:['direct'])];
+  const availableTabs=[...state.tabOrder,'direct'];
   const nextTab=availableTabs.includes(state.active)?state.active:availableTabs[0];
   if(nextTab) activateTab(nextTab,false);
   else {
@@ -409,7 +421,7 @@ document.querySelector('#tabs').addEventListener('click',e=>{
   const close=e.target.closest('.tab-close[data-close-tab]');
   if(close){
     const id=close.dataset.closeTab;
-    const basicNames={room9:'강의실 9',room11:'강의실 11',direct:'명단 바로 입력'};
+    const basicNames={room9:'강의실 9',room11:'강의실 11'};
     const tab=getCustom(id), name=basicNames[id]||tab?.name;
     if(!name) return;
     if(confirm(`'${name}' 탭을 삭제할까요?`)){
@@ -425,6 +437,12 @@ document.querySelector('#tabs').addEventListener('click',e=>{
 });
 document.querySelector('#panels').addEventListener('input',e=>{
   const panel=e.target.closest('.custom-panel'); if(!panel) return;
+  if(e.target.classList.contains('custom-count')){
+    const addButton=panel.querySelector('.add-rows-btn');
+    const ready=Number.isInteger(Number(e.target.value))&&Number(e.target.value)>0&&Number(e.target.value)<=200;
+    addButton.disabled=!ready; addButton.classList.toggle('is-ready',ready);
+    return;
+  }
   if(e.target.classList.contains('no-entry')){
     const row=e.target.closest('tr'), classInput=row.querySelector('.class-entry');
     if(!classInput.value.trim()) classInput.value=deriveClass(e.target.value);
@@ -485,11 +503,11 @@ document.querySelector('#panels').addEventListener('click',async e=>{
   } else if(action==='split-delete-class'){
     const panel=btn.closest('.custom-panel'), tab=getCustom(panel.dataset.customId), group=tab.classes.find(c=>c.id===btn.closest('.split-class-card').dataset.classId);
     if(confirm(`${group.classNo}반을 삭제할까요?`)){ tab.classes=tab.classes.filter(c=>c.id!==group.id); saveState(); renderCustomTabs(); }
-  } else if(action==='custom-resize'){
+  } else if(action==='custom-add'){
     const panel=btn.closest('.custom-panel'), tab=getCustom(panel.dataset.customId); syncCustomPanel(panel);
     const count=Math.max(1,Math.min(200,Number(panel.querySelector('.custom-count').value)||1));
-    if(count>tab.people.length) tab.people.push(...blankPeople(count-tab.people.length).map((p,i)=>({...p,order:tab.people.length+i+1})));
-    else tab.people=tab.people.slice(0,count);
+    const nextOrder=Math.max(0,...tab.people.filter(p=>!p.excluded).map(p=>Number(p.order)||0));
+    tab.people.push(...blankPeople(count).map((p,i)=>({...p,order:nextOrder+i+1})));
     saveState(); renderCustomTabs();
   } else if(action==='custom-shuffle'){
     const panel=btn.closest('.custom-panel'), tab=getCustom(panel.dataset.customId); syncCustomPanel(panel); assignRandomOrders(tab.people); saveState(); renderCustomTabs();
@@ -594,7 +612,7 @@ installBtn.addEventListener('click',async()=>{
   else alert('Chrome 주소창 오른쪽의 설치 아이콘을 눌러 설치하세요.');
 });
 if('serviceWorker' in navigator&&location.protocol!=='file:') {
-  navigator.serviceWorker.register('./service-worker.js?v=13',{updateViaCache:'none'}).then(reg=>reg.update());
+  navigator.serviceWorker.register('./service-worker.js?v=14',{updateViaCache:'none'}).then(reg=>reg.update());
 }
 renderAll();
 </script>
