@@ -8,7 +8,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="제비뽑기">
   <title>제비뽑기</title>
-  <link rel="manifest" href="manifest.webmanifest?v=11">
+  <link rel="manifest" href="manifest.webmanifest?v=12">
   <link rel="icon" sizes="192x192" href="icon-192.png">
   <link rel="apple-touch-icon" sizes="180x180" href="icon-180.png">
   <style>
@@ -159,9 +159,9 @@
     <button class="install" id="installBtn" type="button">앱 설치</button>
   </header>
   <nav id="tabs" aria-label="탭 선택">
-    <button class="tab active" data-tab="room9" type="button">강의실 9</button>
-    <button class="tab" data-tab="room11" type="button">강의실 11</button>
-    <button class="tab" data-tab="direct" type="button">명단 바로 입력</button>
+    <span class="custom-tab-item" data-base-tab="room9"><button class="tab active" data-tab="room9" type="button">강의실 9</button><button class="tab-close" data-close-tab="room9" type="button" aria-label="강의실 9 탭 삭제">×</button></span>
+    <span class="custom-tab-item" data-base-tab="room11"><button class="tab" data-tab="room11" type="button">강의실 11</button><button class="tab-close" data-close-tab="room11" type="button" aria-label="강의실 11 탭 삭제">×</button></span>
+    <span class="custom-tab-item" data-base-tab="direct"><button class="tab" data-tab="direct" type="button">명단 바로 입력</button><button class="tab-close" data-close-tab="direct" type="button" aria-label="명단 바로 입력 탭 삭제">×</button></span>
     <span id="customTabsNav" style="display:contents"></span>
     <button class="add-tab" id="addTabBtn" type="button">+ 탭 추가</button>
   </nav>
@@ -235,7 +235,7 @@ function makeRoom9() {
   const counts={};
   return DEFAULT9.map(([classNo,studentNo,name,excluded=false])=>({classNo,studentNo,name,excluded,order:excluded?null:(counts[classNo]=(counts[classNo]||0)+1)}));
 }
-const freshState = () => ({ room9:makeRoom9(), room11:makePeople(DEFAULT11), classOrder:['7','8','9'], customTabs:[{id:'direct',name:'명단 바로 입력',type:'combined',people:blankPeople(10)}], active:'room9' });
+const freshState = () => ({ room9:makeRoom9(), room11:makePeople(DEFAULT11), classOrder:['7','8','9'], customTabs:[{id:'direct',name:'명단 바로 입력',type:'combined',people:blankPeople(10)}], hiddenTabs:[], active:'room9' });
 let state = freshState();
 try {
   const saved = JSON.parse(localStorage.getItem(STORE_KEY));
@@ -251,6 +251,7 @@ function mergeRoster(current, defaults) {
 }
 state.room9=mergeRoster(state.room9,makeRoom9());
 state.room11=mergeRoster(state.room11,makePeople(DEFAULT11));
+if(!Array.isArray(state.hiddenTabs)) state.hiddenTabs=[];
 ['7','8','9'].forEach(classNo=>resequenceOrders(state.room9.filter(p=>p.classNo===classNo)));
 resequenceOrders(state.room11);
 if (!state.customTabs.some(t => t.id === 'direct')) state.customTabs.unshift({id:'direct',name:'명단 바로 입력',type:'combined',people:blankPeople(10)});
@@ -325,14 +326,22 @@ function customPanelMarkup(tab) {
 }
 function renderCustomTabs() {
   const extras=state.customTabs.filter(t=>t.id!=='direct');
+  document.querySelectorAll('[data-base-tab]').forEach(item=>item.hidden=state.hiddenTabs.includes(item.dataset.baseTab));
   document.querySelector('#customTabsNav').innerHTML=extras.map(t=>`<span class="custom-tab-item"><button class="tab" data-tab="${t.id}" type="button">${escapeHtml(t.name)}</button><button class="tab-close" data-close-tab="${t.id}" type="button" aria-label="${escapeHtml(t.name)} 탭 삭제">×</button></span>`).join('');
   document.querySelector('#customPanels').innerHTML=extras.map(t=>`<section class="panel custom-panel" id="${t.id}" data-custom-id="${t.id}">${customPanelMarkup(t)}</section>`).join('');
   const direct=state.customTabs.find(t=>t.id==='direct');
   document.querySelector('#direct').innerHTML=customPanelMarkup(direct);
-  activateTab(state.active && document.getElementById(state.active) ? state.active : 'room9', false);
+  const availableTabs=['room9','room11','direct'].filter(id=>!state.hiddenTabs.includes(id)).concat(extras.map(t=>t.id));
+  const nextTab=availableTabs.includes(state.active)?state.active:availableTabs[0];
+  if(nextTab) activateTab(nextTab,false);
+  else {
+    document.querySelectorAll('.tab,.panel').forEach(el=>el.classList.remove('active'));
+    state.active=''; saveState();
+  }
 }
 function renderAll() { renderRoom9(); renderRoom11(); renderCustomTabs(); }
 function activateTab(id, persist=true) {
+  if(state.hiddenTabs.includes(id)||!document.getElementById(id)) return;
   document.querySelectorAll('.tab,.panel').forEach(el=>el.classList.remove('active'));
   document.querySelector(`.tab[data-tab="${id}"]`)?.classList.add('active');
   document.getElementById(id)?.classList.add('active');
@@ -363,10 +372,14 @@ function syncCustomPanel(panel) {
 document.querySelector('#tabs').addEventListener('click',e=>{
   const close=e.target.closest('.tab-close[data-close-tab]');
   if(close){
-    const tab=getCustom(close.dataset.closeTab); if(!tab) return;
-    if(confirm(`'${tab.name}' 탭을 삭제할까요?`)){
-      state.customTabs=state.customTabs.filter(t=>t.id!==tab.id);
-      if(state.active===tab.id) state.active='direct';
+    const id=close.dataset.closeTab;
+    const basicNames={room9:'강의실 9',room11:'강의실 11',direct:'명단 바로 입력'};
+    const tab=getCustom(id), name=basicNames[id]||tab?.name;
+    if(!name) return;
+    if(confirm(`'${name}' 탭을 삭제할까요?`)){
+      if(basicNames[id]) state.hiddenTabs=[...new Set([...state.hiddenTabs,id])];
+      else state.customTabs=state.customTabs.filter(t=>t.id!==id);
+      if(state.active===id) state.active='';
       saveState(); renderCustomTabs();
     }
     return;
@@ -537,7 +550,7 @@ installBtn.addEventListener('click',async()=>{
   else alert('Chrome 주소창 오른쪽의 설치 아이콘을 눌러 설치하세요.');
 });
 if('serviceWorker' in navigator&&location.protocol!=='file:') {
-  navigator.serviceWorker.register('./service-worker.js?v=11',{updateViaCache:'none'}).then(reg=>reg.update());
+  navigator.serviceWorker.register('./service-worker.js?v=12',{updateViaCache:'none'}).then(reg=>reg.update());
 }
 renderAll();
 </script>
