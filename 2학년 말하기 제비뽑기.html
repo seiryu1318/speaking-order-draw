@@ -8,7 +8,15 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="제비뽑기">
   <title>제비뽑기</title>
-  <link rel="manifest" href="manifest.webmanifest?v=15">
+  <script>
+    // The original installed app opens this page without a version parameter.
+    const manifestLink=document.createElement('link');
+    manifestLink.rel='manifest';
+    manifestLink.href=new URLSearchParams(location.search).has('v')
+      ? 'manifest.webmanifest?v=16'
+      : 'manifest-legacy.webmanifest?v=16';
+    document.head.append(manifestLink);
+  </script>
   <link rel="icon" sizes="192x192" href="icon-192.png?v=15">
   <link rel="apple-touch-icon" sizes="180x180" href="icon-180.png?v=15">
   <style>
@@ -37,14 +45,14 @@
     .tab-close:hover { background:var(--blue); }
     .tab-close:active { transform:translateY(-48%); box-shadow:none; }
     .add-tab { flex:0 0 auto; border:0; border-left:1px solid var(--line); background:var(--navy); color:#fff; padding:14px 19px; font-size:19px; font-weight:900; cursor:pointer; }
-    #addTabBtn { min-width:58px; color:#fff; font-size:30px; line-height:1; }
+    #addTabBtn { min-width:58px; color:#8fd5ff; font-size:30px; line-height:1; }
     .fixed-direct-tab { color:#fff; }
     .fixed-direct-tab.active { background:var(--blue); color:#fff; box-shadow:inset 0 -6px 0 #fff; border-bottom-color:var(--blue); }
     main { padding:26px max(28px,env(safe-area-inset-right)) calc(52px + env(safe-area-inset-bottom)) max(28px,env(safe-area-inset-left)); }
     .panel { display:none; }
     .panel.active { display:block; }
-    .toolbar { display:flex; flex-wrap:wrap; align-items:end; gap:11px; margin-bottom:20px; }
-    .order-box { display:flex; flex-wrap:wrap; gap:10px; padding:13px; background:var(--soft); border:1px solid var(--line); border-radius:11px; }
+    .toolbar { display:flex; flex-wrap:wrap; align-items:end; justify-content:flex-end; gap:11px; margin-bottom:20px; }
+    .order-box { display:flex; flex-wrap:wrap; gap:10px; margin-inline-end:auto; padding:13px; background:var(--soft); border:1px solid var(--line); border-radius:11px; }
     .order-box label { display:flex; align-items:center; gap:8px; font-size:19px; font-weight:900; }
     .order-box input { width:66px; border:2px solid var(--line); border-radius:6px; padding:9px; text-align:center; background:#fff; font-size:20px; font-weight:900; }
     .btn { border:1px solid transparent; border-radius:6px; background:var(--navy); color:#fff; padding:12px 17px; font-size:18px; font-weight:900; cursor:pointer; box-shadow:0 3px 0 rgba(20,35,75,.15); transition:background-color .18s,box-shadow .18s; }
@@ -75,8 +83,9 @@
     .exclude-label { display:inline-flex; align-items:center; gap:5px; padding:5px 8px; border:1px solid var(--line); border-radius:5px; background:#fff; color:var(--muted); font-size:15px; font-weight:900; white-space:nowrap; cursor:pointer; }
     .exclude-label input { width:21px; height:21px; margin:0; accent-color:var(--navy); }
     .excluded-row td, tbody tr:nth-child(even).excluded-row td { background:#eef0f4; color:var(--muted); }
-    .excluded-row td:not(.order-cell) { text-decoration:line-through; }
-    .excluded-row .exclude-label, .excluded-row input { text-decoration:none; }
+    .excluded-row > td:nth-child(-n+2),
+    .excluded-row .name-with-exclude > span,
+    .excluded-row .entry { text-decoration:line-through; }
     .excluded-row td.order-cell, tbody tr:nth-child(even).excluded-row td.order-cell { background:#e4e8ef; }
     .rank { display:inline-grid; place-items:center; min-width:64px; height:64px; padding:0 10px; border:2px solid var(--navy); border-radius:5px; background:#fff; color:var(--navy); font-size:32px; line-height:1; font-weight:900; font-variant-numeric:tabular-nums; letter-spacing:-.04em; box-shadow:3px 3px 0 #c5cede; }
     .rank.top { background:var(--navy); color:#fff; border-color:var(--navy); box-shadow:inset 0 0 0 3px var(--navy),inset 0 0 0 4px rgba(255,255,255,.6),3px 3px 0 #bac4d8; }
@@ -84,8 +93,8 @@
     .direct-setup { display:flex; flex-wrap:wrap; align-items:end; gap:11px; margin-bottom:20px; }
     .direct-setup label { display:grid; gap:7px; font-size:19px; font-weight:900; }
     .direct-setup input { width:135px; border:2px solid var(--line); border-radius:6px; padding:10px; font-size:20px; font-weight:800; }
-    .direct-actions { display:flex; flex-wrap:wrap; gap:11px; margin:-8px 0 20px; }
-    .save-tab-row { display:flex; margin:-8px 0 20px; padding:13px; border:1px solid var(--line); border-radius:6px; background:var(--soft); }
+    .direct-actions { display:flex; flex-wrap:wrap; justify-content:flex-end; gap:11px; margin:-8px 0 20px; }
+    .save-tab-row { display:flex; justify-content:flex-end; margin:-8px 0 20px; padding:13px; border:1px solid var(--line); border-radius:6px; background:var(--soft); }
     .save-tab-row .btn { min-width:180px; background:var(--navy); }
     .add-rows-btn { background:#e5e9f1; color:var(--muted); border-color:var(--line); transition:background-color .2s ease,transform .2s ease,box-shadow .2s ease; }
     .add-rows-btn:disabled { cursor:default; box-shadow:none; }
@@ -99,12 +108,15 @@
     .dialog-body h2 { margin:0 0 20px; font-size:28px; }
     .dialog-body label { display:grid; gap:7px; margin:0 0 16px; font-weight:900; }
     .dialog-body input { width:100%; border:2px solid var(--line); border-radius:6px; padding:11px; font-size:20px; }
-    .nice-upload-box { margin:0 0 22px; padding:17px; border:1px solid #9daac4; border-radius:8px; background:var(--soft); }
+    .nice-upload-box { margin:0 0 22px; padding:20px 16px; border:1px solid var(--line); border-radius:8px; background:var(--soft); text-align:center; }
     .nice-upload-box h3 { margin:0 0 10px; color:var(--navy); font-size:22px; }
-    .nice-path { margin:0 0 14px; color:var(--muted); font-size:15px; font-weight:750; line-height:1.6; }
-    .nice-file { display:block!important; margin:0!important; padding:12px; border:1px dashed var(--navy); border-radius:6px; background:#fff; color:var(--navy); text-align:center; cursor:pointer; }
-    .nice-file input { margin-top:8px; padding:7px; font-size:16px; }
-    .nice-status { min-height:22px; margin:10px 0 0; color:var(--navy); font-size:15px; font-weight:850; }
+    .nice-path { max-width:33ch; margin:0 auto 16px; color:var(--muted); font-size:15px; font-weight:750; line-height:1.65; word-break:keep-all; }
+    .dialog-body .nice-file { position:relative; display:inline-block; margin:0; cursor:pointer; }
+    .nice-file input { position:absolute; width:1px; height:1px; margin:-1px; padding:0; border:0; overflow:hidden; clip-path:inset(50%); white-space:nowrap; }
+    .nice-file .btn { display:inline-block; }
+    .nice-file:focus-within .btn { outline:3px solid var(--blue); outline-offset:3px; box-shadow:0 0 0 5px #fff; }
+    .nice-status { margin:0; color:var(--navy); font-size:15px; font-weight:850; overflow-wrap:anywhere; }
+    .nice-status:not(:empty) { margin-top:12px; }
     .dialog-divider { display:flex; align-items:center; gap:10px; margin:0 0 18px; color:var(--muted); font-size:15px; font-weight:900; }
     .dialog-divider::before, .dialog-divider::after { content:""; flex:1; height:1px; background:var(--line); }
     .type-choice { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:0 0 18px; }
@@ -121,6 +133,7 @@
       header { padding:22px 20px 18px; }
       .tab { min-width:145px; padding-inline:14px; }
       .class-actions .btn { padding:11px 13px; }
+      table { min-width:0; }
       th, td { padding:12px 9px; }
       td { font-size:20px; }
     }
@@ -132,30 +145,24 @@
       .tab { min-width:135px; font-size:18px; padding:15px 12px 11px; }
       .install { padding:9px 12px; }
       .toolbar, .direct-setup, .split-add { align-items:stretch; }
-      .toolbar .btn, .direct-setup .btn, .direct-actions .btn, .split-add .btn { flex:1 1 145px; }
-      .save-tab-row .btn { width:100%; }
       .class-head { align-items:flex-start; flex-direction:column; padding:11px 12px; }
       .class-head h2 { font-size:24px; }
-      .class-actions { width:100%; justify-content:flex-start; }
-      .class-actions .btn { flex:1 1 125px; }
-      .table-wrap { overflow:visible; }
-      table { min-width:0; table-layout:auto; }
-      thead { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); }
-      tbody { display:block; padding:10px; }
-      tbody tr { display:block; margin:0 0 12px; border:1px solid var(--line); border-radius:7px; overflow:hidden; background:#fff; }
-      tbody tr:last-child { margin-bottom:0; }
-      tbody tr:nth-child(even) td { background:var(--shade); }
-      td, td:nth-child(1), td:nth-child(2), td:nth-child(3), td:nth-child(4) { display:grid; grid-template-columns:72px minmax(0,1fr); align-items:center; width:auto; min-height:52px; padding:9px 11px; border-bottom:1px solid var(--line); text-align:left; font-size:20px; }
-      td:last-child { border-bottom:0; }
-      td::before { color:var(--muted); font-size:15px; font-weight:900; }
-      td:nth-child(1)::before { content:"반"; }
-      td:nth-child(2)::before { content:"학번"; }
-      td:nth-child(3)::before { content:"이름"; }
-      td:nth-child(4)::before { content:"순서"; }
-      td.order-cell, tbody tr:nth-child(even) td.order-cell { background:#e9edf6; border-left:0; }
-      .name-with-exclude { justify-content:flex-start; min-width:0; }
-      .name-with-exclude .entry { min-width:0; }
-      .rank { justify-self:start; }
+      .class-head > .btn { align-self:flex-end; }
+      .class-actions { width:100%; }
+      .toolbar .btn, .direct-actions .btn, .save-tab-row .btn, .class-actions .btn { padding:10px 12px; font-size:15px; }
+      table { min-width:0; }
+      th, td { padding:8px 4px; font-size:16px; }
+      td:nth-child(1), th:nth-child(1) { width:13%; }
+      td:nth-child(2), th:nth-child(2) { width:24%; }
+      td:nth-child(3), th:nth-child(3) { width:43%; }
+      td:nth-child(4), th:nth-child(4) { width:20%; }
+      .name-with-exclude { min-width:0; flex-wrap:wrap; gap:4px; }
+      .name-with-exclude > span { min-width:0; overflow-wrap:anywhere; }
+      .entry { padding:8px 2px; min-width:0; font-size:16px; }
+      .name-with-exclude > .entry { flex:1 1 55px; width:auto; }
+      .exclude-label { min-height:32px; padding:3px 5px; gap:3px; font-size:12px; }
+      .exclude-label input { width:16px; height:16px; }
+      .rank { min-width:40px; height:40px; padding:0 4px; font-size:21px; box-shadow:2px 2px 0 #c5cede; }
       dialog { max-height:92vh; overflow-y:auto; }
     }
     @media (max-width:420px) {
@@ -164,13 +171,10 @@
       .install { margin-left:auto; font-size:15px; }
       .tab { min-width:122px; font-size:16px; }
       .add-tab { padding-inline:14px; font-size:16px; }
-      td, td:nth-child(1), td:nth-child(2), td:nth-child(3), td:nth-child(4) { grid-template-columns:62px minmax(0,1fr); padding-inline:9px; font-size:19px; }
-      .name-with-exclude { align-items:flex-start; flex-direction:column; gap:7px; }
-      .exclude-label { font-size:14px; }
       .dialog-body { padding:18px 15px; }
     }
     @media (prefers-reduced-motion:reduce) { .add-rows-btn.is-ready { animation:none; } button { transition:none!important; } }
-    @media print { header, nav, .toolbar, .direct-setup, .direct-actions, .save-tab-row, .class-head .btn { display:none!important; } .app { box-shadow:none; } main { padding:0; } .panel { display:none!important; } .panel.active { display:block!important; } .class-card { break-inside:avoid; } }
+    @media print { header, nav, .toolbar, .direct-setup, .direct-actions, .save-tab-row, .split-add, .class-actions, .class-head .btn { display:none!important; } .app { box-shadow:none; } main { padding:0; } .panel { display:none!important; } .panel.active { display:block!important; } .class-card { break-inside:avoid; } }
   </style>
 </head>
 <body>
@@ -202,6 +206,7 @@
     <section class="panel" id="room11">
       <div class="toolbar">
         <button class="btn" data-action="shuffle-room11" type="button">전체 순서 섞기</button>
+        <button class="btn light" data-action="default-room11-order" type="button">순서 기본값</button>
         <button class="btn light" data-action="reset-room11" type="button">명단 초기화</button>
         <button class="btn" data-action="save-image" type="button">이미지 저장</button>
       </div>
@@ -219,8 +224,11 @@
     <div class="nice-upload-box">
       <h3>나이스 명단 엑셀 업로드</h3>
       <p class="nice-path">나이스 접속 → 교과담임 → 수행평가성적관리 → 조회 → 일괄업로드 → 엑셀다운로드</p>
-      <label class="nice-file">엑셀 파일 선택<input id="niceExcelFile" type="file" accept=".xlsx,.xls"></label>
-      <p class="nice-status" id="niceUploadStatus"></p>
+      <label class="nice-file">
+        <input id="niceExcelFile" type="file" accept=".xlsx,.xls">
+        <span class="btn">엑셀 파일 선택</span>
+      </label>
+      <p class="nice-status" id="niceUploadStatus" role="status"></p>
     </div>
     <div class="dialog-divider">직접 탭 만들기</div>
     <label>탭 이름<input id="newTabName" maxlength="20" required autocomplete="off"></label>
@@ -236,6 +244,41 @@
   </form>
 </dialog>
 
+<dialog id="renameTabDialog" aria-labelledby="renameTabTitle">
+  <form method="dialog" class="dialog-body" id="renameTabForm">
+    <h2 id="renameTabTitle">탭 이름 변경</h2>
+    <label>탭 이름<input id="renameTabName" maxlength="20" required autocomplete="off"></label>
+    <div class="dialog-actions">
+      <button class="btn light" id="cancelRenameTab" type="button">취소</button>
+      <button class="btn" type="submit">저장</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="imageSaveDialog" aria-labelledby="imageSaveTitle" data-html2canvas-ignore>
+  <div class="dialog-body">
+    <h2 id="imageSaveTitle">이미지 저장</h2>
+    <p id="imageSaveStatus" role="status"></p>
+    <label id="imageSavePageLabel" hidden>페이지<select id="imageSavePage"></select></label>
+    <div class="dialog-actions">
+      <button class="btn light" id="imageSaveClose" type="button">닫기</button>
+      <a class="btn" id="imageSaveDownload" hidden>PNG 다운로드</a>
+      <button class="btn" id="imageSaveShare" type="button" hidden>공유</button>
+    </div>
+    <img id="imageSavePreview" alt="명단 이미지" hidden>
+  </div>
+</dialog>
+
+<style>
+  #imageSaveDialog { width:min(640px,calc(100% - 24px)); max-height:calc(100% - 24px); overflow:auto; }
+  #imageSaveDialog [hidden] { display:none!important; }
+  #imageSaveStatus { margin:0 0 12px; color:var(--muted); font-size:16px; line-height:1.5; }
+  #imageSavePage { width:100%; padding:8px; border:1px solid var(--line); border-radius:6px; background:#fff; color:var(--navy); font:inherit; }
+  #imageSaveDialog .dialog-actions { flex-wrap:wrap; align-items:center; margin:0 0 14px; }
+  #imageSaveDownload { text-decoration:none; }
+  #imageSavePreview { display:block; width:100%; height:auto; border:1px solid var(--line); border-radius:6px; }
+</style>
+
 <script src="Sortable.min.js?v=1"></script>
 <script src="xlsx.full.min.js?v=1"></script>
 <script src="html2canvas.min.js?v=1"></script>
@@ -249,6 +292,7 @@ const DEFAULT11 = [
   ['11','21101','김동주'],['11','21102','김민규'],['11','21104','김진우',true],['11','21105','김찬목'],['11','21106','박준우'],['11','21107','서형진'],['11','21108','신수환'],['11','21109','신정헌'],['11','21110','신정훈'],['11','21112','오도겸'],['11','21113','오정근'],['11','21114','오한새'],['11','21115','원준호'],['11','21116','이경욱'],['11','21117','이원찬'],['11','21118','이유찬'],['11','21119','이종수'],['11','21120','이준우'],['11','21121','이태영'],['11','21122','이혜성'],['11','21123','장윤서'],['11','21124','정권'],['11','21127','최은호'],['11','21128','최호영'],['11','21129','하준우'],['11','21130','한선규'],['11','21131','홍준우'],['11','21132','최민호']
 ];
 const STORE_KEY = 'speaking-draw-v4';
+const baseTabNames = {room9:'강의실 9',room11:'강의실 11'};
 const makePeople = list => { let n=0; return list.map(s => ({ classNo:s[0], studentNo:s[1], name:s[2], excluded:Boolean(s[3]), order:s[3]?null:++n })); };
 const blankPeople = count => Array.from({length:count}, (_,i) => ({ classNo:'', studentNo:'', name:'', excluded:false, order:i+1 }));
 function makeRoom9() {
@@ -273,10 +317,11 @@ state.room9=mergeRoster(state.room9,makeRoom9());
 state.room11=mergeRoster(state.room11,makePeople(DEFAULT11));
 if(!Array.isArray(state.hiddenTabs)) state.hiddenTabs=[];
 state.hiddenTabs=state.hiddenTabs.filter(id=>id!=='direct');
+state.tabNames={...baseTabNames,...state.tabNames};
 ['7','8','9'].forEach(classNo=>resequenceOrders(state.room9.filter(p=>p.classNo===classNo)));
 resequenceOrders(state.room11);
 if (!state.customTabs.some(t => t.id === 'direct')) state.customTabs.unshift({id:'direct',name:'명단 바로 입력',type:'combined',people:blankPeople(10)});
-state.customTabs.find(t=>t.id==='direct').name='명단 바로 입력';
+state.customTabs.find(t=>t.id==='direct').name ||= '명단 바로 입력';
 state.customTabs.forEach(tab=>{
   tab.type=tab.type==='split'?'split':'combined';
   if(tab.type==='combined'&&!Array.isArray(tab.people)) tab.people=blankPeople(10);
@@ -313,6 +358,10 @@ function resequenceOrders(people) {
   people.forEach(p=>{if(p.excluded)p.order=null;});
   active.forEach((p,i)=>p.order=i+1);
 }
+function assignDefaultOrders(people) {
+  let order=0;
+  for(const person of people) person.order=person.excluded?null:++order;
+}
 function escapeHtml(v) { return String(v ?? '').replace(/[&<>\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c])); }
 function deriveClass(no) { const s=String(no).trim(); return /^\d{5}$/.test(s) ? String(Number(s.slice(1,3))) : ''; }
 function rankMarkup(order) {
@@ -326,14 +375,14 @@ function tableHead() { return '<thead><tr><th>반</th><th>학번</th><th>이름<
 
 function renderRoom9() {
   const root=document.querySelector('#room9Capture');
-  root.innerHTML='<h2 class="capture-title">강의실 9</h2>'+state.classOrder.map(c=>{
+  root.innerHTML=`<h2 class="capture-title">${escapeHtml(getTabName('room9'))}</h2>`+state.classOrder.map(c=>{
     const people=state.room9.filter(p=>p.classNo===c);
-    return `<article class="class-card"><div class="class-head"><h2>${c}반</h2><button class="btn" data-action="shuffle-class" data-class="${c}" type="button">${c}반 순서 섞기</button></div><div class="table-wrap"><table>${tableHead()}<tbody>${fixedRows(people,'room9')}</tbody></table></div></article>`;
+    return `<article class="class-card"><div class="class-head"><h2>${c}반</h2><div class="class-actions"><button class="btn" data-action="shuffle-class" data-class="${c}" type="button">${c}반 순서 섞기</button><button class="btn light" data-action="default-class-order" data-class="${c}" type="button">순서 기본값</button></div></div><div class="table-wrap"><table>${tableHead()}<tbody>${fixedRows(people,'room9')}</tbody></table></div></article>`;
   }).join('');
   state.classOrder.forEach((c,i)=>{ const input=document.querySelector(`#classOrder input[data-class="${c}"]`); if(input) input.value=i+1; });
 }
 function renderRoom11() {
-  document.querySelector('#room11Capture').innerHTML=`<h2 class="capture-title">강의실 11</h2><article class="class-card"><div class="class-head"><h2>11반</h2></div><div class="table-wrap"><table>${tableHead()}<tbody>${fixedRows(state.room11,'room11')}</tbody></table></div></article>`;
+  document.querySelector('#room11Capture').innerHTML=`<h2 class="capture-title">${escapeHtml(getTabName('room11'))}</h2><article class="class-card"><div class="class-head"><h2>11반</h2></div><div class="table-wrap"><table>${tableHead()}<tbody>${fixedRows(state.room11,'room11')}</tbody></table></div></article>`;
 }
 function customRows(tab) {
   return tab.people.map((p,i)=>`<tr class="${p.excluded?'excluded-row':''}"><td><input class="entry class-entry" data-i="${i}" value="${escapeHtml(p.classNo)}" aria-label="${i+1}번 반"></td><td><input class="entry no-entry" data-i="${i}" value="${escapeHtml(p.studentNo)}" inputmode="numeric" aria-label="${i+1}번 학번"></td><td><div class="name-with-exclude"><input class="entry name-entry" data-i="${i}" value="${escapeHtml(p.name)}" aria-label="${i+1}번 이름"><label class="exclude-label"><input class="custom-exclude" type="checkbox" data-i="${i}" ${p.excluded?'checked':''}>제외</label></div></td><td class="order-cell">${rankMarkup(p.order)}</td></tr>`).join('');
@@ -342,17 +391,36 @@ function splitRows(group) {
   return group.people.map((p,i)=>`<tr class="${p.excluded?'excluded-row':''}"><td>${escapeHtml(group.classNo)}</td><td><input class="entry split-no-entry" data-i="${i}" value="${escapeHtml(p.studentNo)}" inputmode="numeric" aria-label="${group.classNo}반 ${i+1}번 학번"></td><td><div class="name-with-exclude"><input class="entry split-name-entry" data-i="${i}" value="${escapeHtml(p.name)}" aria-label="${group.classNo}반 ${i+1}번 이름"><label class="exclude-label"><input class="split-exclude" type="checkbox" data-i="${i}" ${p.excluded?'checked':''}>제외</label></div></td><td class="order-cell">${rankMarkup(p.order)}</td></tr>`).join('');
 }
 function splitPanelMarkup(tab) {
-  const cards=tab.classes.map(group=>`<article class="class-card split-class-card" data-class-id="${group.id}"><div class="class-head"><h2>${escapeHtml(group.classNo)}반</h2><div class="class-actions"><label>인원 수<input class="split-count" type="number" min="1" max="100" value="${group.people.length}" inputmode="numeric"></label><button class="btn secondary" data-action="split-resize" type="button">입력칸 만들기</button><button class="btn" data-action="split-shuffle" type="button">순서 섞기</button><button class="btn light" data-action="split-clear" type="button">명단 초기화</button><button class="btn danger" data-action="split-delete-class" type="button">반 삭제</button></div></div><div class="table-wrap"><table>${tableHead()}<tbody>${splitRows(group)}</tbody></table></div></article>`).join('');
+  const cards=tab.classes.map(group=>`<article class="class-card split-class-card" data-class-id="${group.id}">
+    <div class="class-head"><h2>${escapeHtml(group.classNo)}반</h2><div class="class-actions">
+      <label>인원 수<input class="split-count" type="number" min="1" max="100" value="${group.people.length}" inputmode="numeric"></label>
+      <button class="btn secondary" data-action="split-resize" type="button">입력칸 만들기</button>
+      <button class="btn" data-action="split-shuffle" type="button">순서 섞기</button>
+      <button class="btn light" data-action="split-default-order" type="button">순서 기본값</button>
+      <button class="btn light" data-action="split-clear" type="button">명단 초기화</button>
+      <button class="btn danger" data-action="split-delete-class" type="button">반 삭제</button>
+    </div></div>
+    <div class="table-wrap"><table>${tableHead()}<tbody>${splitRows(group)}</tbody></table></div>
+  </article>`).join('');
   return `<div class="split-add"><label>반 번호<input class="new-class-no" type="number" min="1" max="99" inputmode="numeric" placeholder="7"></label><button class="btn secondary" data-action="split-add-class" type="button">반 추가</button><button class="btn" data-action="save-image" type="button">이미지 저장</button></div><div class="capture-area"><h2 class="capture-title">${escapeHtml(tab.name)}</h2>${cards||'<div class="empty-note">반 번호를 입력하고 반 추가를 누르세요.</div>'}</div>`;
 }
 function customPanelMarkup(tab) {
   if(tab.type==='split') return splitPanelMarkup(tab);
   const saveAsTab=tab.id==='direct'?'<div class="save-tab-row"><button class="btn" data-action="save-direct-tab" type="button">탭으로 저장</button></div>':'';
-  return `<div class="direct-setup"><label>추가할 인원 수<input class="custom-count" type="number" min="1" max="200" value="" placeholder="1" inputmode="numeric"></label><button class="btn add-rows-btn" data-action="custom-add" type="button" disabled>입력칸 추가</button></div><div class="direct-actions"><button class="btn" data-action="custom-shuffle" type="button">전체 순서 섞기</button><button class="btn light" data-action="custom-clear" type="button">명단 초기화</button><button class="btn" data-action="save-image" type="button">이미지 저장</button></div>${saveAsTab}<div class="capture-area"><h2 class="capture-title">${escapeHtml(tab.name)}</h2><article class="class-card"><div class="table-wrap"><table>${tableHead()}<tbody>${customRows(tab)}</tbody></table></div></article></div>`;
+  return `<div class="direct-setup"><label>추가할 인원 수<input class="custom-count" type="number" min="1" max="200" value="" placeholder="1" inputmode="numeric"></label><button class="btn add-rows-btn" data-action="custom-add" type="button" disabled>입력칸 추가</button></div>
+    <div class="direct-actions">
+      <button class="btn" data-action="custom-shuffle" type="button">전체 순서 섞기</button>
+      <button class="btn light" data-action="custom-default-order" type="button">순서 기본값</button>
+      <button class="btn light" data-action="custom-clear" type="button">명단 초기화</button>
+      <button class="btn" data-action="save-image" type="button">이미지 저장</button>
+    </div>
+    ${saveAsTab}<div class="capture-area"><h2 class="capture-title">${escapeHtml(tab.name)}</h2><article class="class-card"><div class="table-wrap"><table>${tableHead()}<tbody>${customRows(tab)}</tbody></table></div></article></div>`;
 }
-const baseTabNames={room9:'강의실 9',room11:'강의실 11'};
+function getTabName(id) {
+  return Object.hasOwn(baseTabNames,id)?state.tabNames[id]:getCustom(id)?.name;
+}
 function sortableTabMarkup(id) {
-  const tab=getCustom(id), name=baseTabNames[id]||tab?.name;
+  const name=getTabName(id);
   if(!name) return '';
   return `<span class="custom-tab-item" data-sort-tab="${id}"><button class="tab" data-tab="${id}" type="button">${escapeHtml(name)}</button><button class="tab-close" data-close-tab="${id}" type="button" aria-label="${escapeHtml(name)} 탭 삭제">×</button></span>`;
 }
@@ -362,7 +430,7 @@ function renderCustomTabs() {
   state.tabOrder=state.tabOrder.filter(id=>sortableIds.includes(id));
   sortableIds.forEach(id=>{ if(!state.tabOrder.includes(id)) state.tabOrder.push(id); });
   document.querySelector('#sortableTabsNav').innerHTML=state.tabOrder.map(sortableTabMarkup).join('');
-  document.querySelector('[data-base-tab="direct"]').hidden=false;
+  document.querySelector('[data-base-tab="direct"]').textContent=getTabName('direct');
   document.querySelector('#customPanels').innerHTML=extras.map(t=>`<section class="panel custom-panel" id="${t.id}" data-custom-id="${t.id}">${customPanelMarkup(t)}</section>`).join('');
   const direct=state.customTabs.find(t=>t.id==='direct');
   document.querySelector('#direct').innerHTML=customPanelMarkup(direct);
@@ -423,11 +491,10 @@ document.querySelector('#tabs').addEventListener('click',e=>{
   const close=e.target.closest('.tab-close[data-close-tab]');
   if(close){
     const id=close.dataset.closeTab;
-    const basicNames={room9:'강의실 9',room11:'강의실 11'};
-    const tab=getCustom(id), name=basicNames[id]||tab?.name;
+    const name=getTabName(id);
     if(!name) return;
     if(confirm(`'${name}' 탭을 삭제할까요?`)){
-      if(basicNames[id]) state.hiddenTabs=[...new Set([...state.hiddenTabs,id])];
+      if(Object.hasOwn(baseTabNames,id)) state.hiddenTabs=[...new Set([...state.hiddenTabs,id])];
       else state.customTabs=state.customTabs.filter(t=>t.id!==id);
       state.tabOrder=state.tabOrder.filter(tabId=>tabId!==id);
       if(state.active===id) state.active='';
@@ -435,7 +502,51 @@ document.querySelector('#tabs').addEventListener('click',e=>{
     }
     return;
   }
-  const btn=e.target.closest('.tab[data-tab]'); if(btn) activateTab(btn.dataset.tab);
+  const btn=e.target.closest('.tab[data-tab]');
+  if(!btn) return;
+  activateTab(btn.dataset.tab);
+  if(e.pointerType==='touch') {
+    const now=performance.now();
+    if(lastTabTap?.id===btn.dataset.tab && now-lastTabTap.time<350) {
+      lastTabTap=null;
+      openRenameTab(btn);
+    } else {
+      lastTabTap={id:btn.dataset.tab,time:now};
+    }
+  }
+});
+const renameDialog=document.querySelector('#renameTabDialog');
+const renameInput=document.querySelector('#renameTabName');
+let lastTabTap=null;
+let renameTabId=null;
+function openRenameTab(button) {
+  if(!button||renameDialog.open) return;
+  renameTabId=button.dataset.tab;
+  renameInput.value=getTabName(renameTabId);
+  renameDialog.showModal();
+  renameInput.select();
+}
+document.querySelector('#tabs').addEventListener('dblclick',e=>{
+  openRenameTab(e.target.closest('.tab[data-tab]'));
+});
+document.querySelector('#tabs').addEventListener('keydown',e=>{
+  if(e.key!=='F2') return;
+  const button=e.target.closest('.tab[data-tab]');
+  if(!button) return;
+  e.preventDefault();
+  openRenameTab(button);
+});
+document.querySelector('#cancelRenameTab').addEventListener('click',()=>renameDialog.close());
+document.querySelector('#renameTabForm').addEventListener('submit',e=>{
+  e.preventDefault();
+  const name=renameInput.value.trim();
+  if(!name) { renameInput.focus(); return; }
+  if(Object.hasOwn(baseTabNames,renameTabId)) state.tabNames[renameTabId]=name;
+  else getCustom(renameTabId).name=name;
+  saveState();
+  renameDialog.close();
+  renderAll();
+  document.querySelector(`.tab[data-tab="${renameTabId}"]`)?.focus();
 });
 document.querySelector('#panels').addEventListener('input',e=>{
   const panel=e.target.closest('.custom-panel'); if(!panel) return;
@@ -460,6 +571,7 @@ document.querySelector('#panels').addEventListener('change',e=>{
     else resequenceOrders(state.room9.filter(p=>p.classNo===person.classNo));
     saveState(); e.target.dataset.list==='room11'?renderRoom11():renderRoom9(); return;
   }
+  if(!e.target.matches('.custom-exclude,.split-exclude')) return;
   const panel=e.target.closest('.custom-panel'); if(!panel) return;
   const tab=getCustom(panel.dataset.customId); syncCustomPanel(panel);
   if(e.target.classList.contains('custom-exclude')) resequenceOrders(tab.people);
@@ -472,19 +584,24 @@ document.querySelector('#panels').addEventListener('change',e=>{
 document.querySelector('#panels').addEventListener('click',async e=>{
   const btn=e.target.closest('[data-action]'); if(!btn) return;
   const action=btn.dataset.action;
-  if(action==='shuffle-class'){
-    const people=state.room9.filter(p=>p.classNo===btn.dataset.class); assignRandomOrders(people); saveState(); renderRoom9();
+  if(action==='shuffle-class'||action==='default-class-order'){
+    const people=state.room9.filter(p=>p.classNo===btn.dataset.class);
+    if(action==='shuffle-class') assignRandomOrders(people);
+    else assignDefaultOrders(people);
+    saveState(); renderRoom9();
   } else if(action==='apply-class-order'){
     const entries=[...document.querySelectorAll('#classOrder input')].map(i=>({c:i.dataset.class,n:Number(i.value)}));
     const nums=entries.map(x=>x.n);
     if(nums.some(n=>!Number.isInteger(n)||n<1||n>3)||new Set(nums).size!==3){ alert('반 순서는 1, 2, 3을 한 번씩 입력하세요.'); return; }
     state.classOrder=entries.sort((a,b)=>a.n-b.n).map(x=>x.c); saveState(); renderRoom9();
-  } else if(action==='shuffle-room11'){
-    assignRandomOrders(state.room11); saveState(); renderRoom11();
+  } else if(action==='shuffle-room11'||action==='default-room11-order'){
+    if(action==='shuffle-room11') assignRandomOrders(state.room11);
+    else assignDefaultOrders(state.room11);
+    saveState(); renderRoom11();
   } else if(action==='reset-room9'){
-    if(confirm('강의실 9 명단과 순서를 처음 상태로 되돌릴까요?')){ state.room9=makeRoom9(); state.classOrder=['7','8','9']; saveState(); renderRoom9(); }
+    if(confirm(`${getTabName('room9')} 명단과 순서를 처음 상태로 되돌릴까요?`)){ state.room9=makeRoom9(); state.classOrder=['7','8','9']; saveState(); renderRoom9(); }
   } else if(action==='reset-room11'){
-    if(confirm('강의실 11 명단과 순서를 처음 상태로 되돌릴까요?')){ state.room11=makePeople(DEFAULT11); saveState(); renderRoom11(); }
+    if(confirm(`${getTabName('room11')} 명단과 순서를 처음 상태로 되돌릴까요?`)){ state.room11=makePeople(DEFAULT11); saveState(); renderRoom11(); }
   } else if(action==='split-add-class'){
     const panel=btn.closest('.custom-panel'), tab=getCustom(panel.dataset.customId), input=panel.querySelector('.new-class-no');
     const classNo=String(Number(input.value));
@@ -497,8 +614,12 @@ document.querySelector('#panels').addEventListener('click',async e=>{
     if(count>group.people.length) group.people.push(...blankPeople(count-group.people.length).map((p,i)=>({...p,classNo:group.classNo,order:group.people.length+i+1})));
     else group.people=group.people.slice(0,count);
     saveState(); renderCustomTabs();
-  } else if(action==='split-shuffle'){
-    const panel=btn.closest('.custom-panel'), tab=getCustom(panel.dataset.customId), group=tab.classes.find(c=>c.id===btn.closest('.split-class-card').dataset.classId); syncCustomPanel(panel); assignRandomOrders(group.people); saveState(); renderCustomTabs();
+  } else if(action==='split-shuffle'||action==='split-default-order'){
+    const panel=btn.closest('.custom-panel'), tab=getCustom(panel.dataset.customId), group=tab.classes.find(c=>c.id===btn.closest('.split-class-card').dataset.classId);
+    syncCustomPanel(panel);
+    if(action==='split-shuffle') assignRandomOrders(group.people);
+    else assignDefaultOrders(group.people);
+    saveState(); renderCustomTabs();
   } else if(action==='split-clear'){
     const panel=btn.closest('.custom-panel'), tab=getCustom(panel.dataset.customId), group=tab.classes.find(c=>c.id===btn.closest('.split-class-card').dataset.classId);
     if(confirm(`${group.classNo}반 명단과 순서를 초기화할까요?`)){ group.people=blankPeople(group.people.length).map(p=>({...p,classNo:group.classNo})); saveState(); renderCustomTabs(); }
@@ -511,8 +632,12 @@ document.querySelector('#panels').addEventListener('click',async e=>{
     const nextOrder=Math.max(0,...tab.people.filter(p=>!p.excluded).map(p=>Number(p.order)||0));
     tab.people.push(...blankPeople(count).map((p,i)=>({...p,order:nextOrder+i+1})));
     saveState(); renderCustomTabs();
-  } else if(action==='custom-shuffle'){
-    const panel=btn.closest('.custom-panel'), tab=getCustom(panel.dataset.customId); syncCustomPanel(panel); assignRandomOrders(tab.people); saveState(); renderCustomTabs();
+  } else if(action==='custom-shuffle'||action==='custom-default-order'){
+    const panel=btn.closest('.custom-panel'), tab=getCustom(panel.dataset.customId);
+    syncCustomPanel(panel);
+    if(action==='custom-shuffle') assignRandomOrders(tab.people);
+    else assignDefaultOrders(tab.people);
+    saveState(); renderCustomTabs();
   } else if(action==='save-direct-tab'){
     const panel=btn.closest('.custom-panel'), direct=getCustom('direct'); syncCustomPanel(panel);
     const name=prompt('저장할 탭 이름을 입력하세요.','새 명단')?.trim();
@@ -593,17 +718,162 @@ async function importNiceExcel(file) {
 }
 document.querySelector('#niceExcelFile').addEventListener('change',e=>{ const file=e.target.files?.[0]; if(file) importNiceExcel(file); });
 
+const imageSaveDialog = document.querySelector('#imageSaveDialog');
+const imageSaveStatus = document.querySelector('#imageSaveStatus');
+const imageSavePage = document.querySelector('#imageSavePage');
+const imageSavePageLabel = document.querySelector('#imageSavePageLabel');
+const imageSavePreview = document.querySelector('#imageSavePreview');
+const imageSaveDownload = document.querySelector('#imageSaveDownload');
+const imageSaveShare = document.querySelector('#imageSaveShare');
+let imageSaveSession;
+let imageSaveBusy = false;
+
+function getImagePages(area, mobile) {
+  const bounds = area.getBoundingClientRect();
+  const width = Math.ceil(Math.max(bounds.width, ...Array.from(area.querySelectorAll('.table-wrap'), wrap =>
+    wrap.getBoundingClientRect().left - bounds.left + wrap.scrollWidth)));
+  const height = Math.ceil(bounds.height);
+  const maxSide = mobile ? 4096 : 16384;
+  const maxPixels = mobile ? 8_000_000 : 16_000_000;
+  const fitScale = Math.min(maxSide / height, Math.sqrt(maxPixels / (width * height)));
+  const scale = Math.min(2, maxSide / width, Math.max(1.25, fitScale));
+  const pageHeight = Math.floor(Math.min(maxSide / scale, maxPixels / (width * scale * scale)));
+  const rowEnds = Array.from(area.querySelectorAll('tbody tr'), row =>
+    Math.ceil(row.getBoundingClientRect().bottom - bounds.top));
+  const pages = [];
+  let top = 0;
+  while (top < height) {
+    const limit = Math.min(height, top + pageHeight);
+    const rowEnd = limit < height ? rowEnds.filter(end => end > top && end <= limit).pop() : height;
+    const end = rowEnd ?? limit;
+    pages.push({ top, height: end - top });
+    top = end;
+  }
+  return { width, scale, pages, windowWidth: window.innerWidth, windowHeight: window.innerHeight };
+}
+
+async function renderImagePage(area, page, { width, scale, windowWidth, windowHeight }) {
+  const canvas = await html2canvas(area, {
+    backgroundColor: '#ffffff',
+    logging: false,
+    width,
+    windowWidth,
+    windowHeight,
+    height: page.height,
+    y: page.top,
+    scale,
+    onclone(_document, clone) {
+      clone.querySelectorAll('.table-wrap').forEach(wrap => {
+        if (wrap.scrollWidth <= wrap.clientWidth) return;
+        wrap.style.overflow = 'visible';
+        wrap.closest('.class-card').style.overflow = 'visible';
+      });
+    }
+  });
+  try {
+    return await new Promise((resolve, reject) => {
+      canvas.toBlob(blob => {
+        if (blob) resolve(blob);
+        else reject(new Error('PNG를 만들 수 없습니다.'));
+      }, 'image/png');
+    });
+  } finally {
+    canvas.width = 1;
+    canvas.height = 1;
+  }
+}
+
+function showImageSavePage() {
+  const entry = imageSaveSession?.files[Number(imageSavePage.value)];
+  if (!entry) return;
+  imageSavePreview.src = entry.url;
+  imageSaveDownload.href = entry.url;
+  imageSaveDownload.download = entry.file.name;
+  imageSavePreview.hidden = false;
+  imageSaveDownload.hidden = false;
+  imageSaveShare.hidden = !navigator.share || !navigator.canShare?.({ files: [entry.file] });
+}
+
+document.querySelector('#imageSaveClose').addEventListener('click', () => imageSaveDialog.close());
+imageSaveDialog.addEventListener('close', () => {
+  imageSavePreview.removeAttribute('src');
+  imageSaveDownload.removeAttribute('href');
+  imageSaveSession?.files.forEach(entry => URL.revokeObjectURL(entry.url));
+  imageSaveSession = undefined;
+});
+imageSavePage.addEventListener('change', showImageSavePage);
+imageSaveShare.addEventListener('click', async () => {
+  const entry = imageSaveSession?.files[Number(imageSavePage.value)];
+  if (!entry) return;
+  try {
+    await navigator.share({ files: [entry.file] });
+  } catch (error) {
+    if (error.name !== 'AbortError') imageSaveStatus.textContent = '공유를 열 수 없습니다. PNG를 다운로드하거나 이미지를 길게 눌러 저장하세요.';
+  }
+});
+
 async function savePanelImage(panel) {
-  if(typeof html2canvas!=='function'){ alert('이미지 저장 기능을 불러오지 못했습니다. 인터넷 연결을 확인하세요.'); return; }
-  const area=panel.querySelector('.capture-area'), name=panel.querySelector('.capture-title')?.textContent.trim()||'제비뽑기';
-  const canvas=await html2canvas(area,{backgroundColor:'#ffffff',scale:2,useCORS:true,scrollX:0,scrollY:-window.scrollY});
-  const link=document.createElement('a'), date=new Date().toISOString().slice(0,10);
-  link.download=`${name}-${date}.png`; link.href=canvas.toDataURL('image/png'); link.click();
+  if (imageSaveBusy || imageSaveDialog.open) return;
+  const area = panel.querySelector('.capture-area');
+  const name = (area.querySelector('.capture-title')?.textContent.trim() || '제비뽑기').replace(/[<>:"/\\|?*]/g, '-');
+  const mobile = matchMedia('(pointer: coarse), (max-width: 680px)').matches ||
+    /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const session = { files: [] };
+  imageSaveSession = session;
+  imageSaveBusy = true;
+  imageSavePage.replaceChildren();
+  imageSavePageLabel.hidden = true;
+  imageSavePreview.hidden = true;
+  imageSaveDownload.hidden = true;
+  imageSaveShare.hidden = true;
+  imageSaveStatus.textContent = '이미지 만드는 중…';
+  imageSaveDialog.showModal();
+  try {
+    if (typeof html2canvas !== 'function') throw new Error('이미지 저장 기능을 불러오지 못했습니다.');
+    const layout = getImagePages(area, mobile);
+    const { pages } = layout;
+    const date = new Date().toISOString().slice(0, 10);
+    for (const [index, page] of pages.entries()) {
+      if (pages.length > 1) imageSaveStatus.textContent = `이미지 만드는 중… ${index + 1}/${pages.length}`;
+      const blob = await renderImagePage(area, page, layout);
+      if (!imageSaveDialog.open || imageSaveSession !== session) return;
+      const suffix = pages.length > 1 ? `-${index + 1}` : '';
+      const file = new File([blob], `${name}-${date}${suffix}.png`, { type: 'image/png' });
+      session.files.push({ file, url: URL.createObjectURL(blob) });
+      imageSavePage.add(new Option(`${index + 1} / ${pages.length}`, String(index)));
+    }
+    if (!mobile && pages.length === 1) {
+      const entry = session.files[0];
+      const download = document.createElement('a');
+      const url = URL.createObjectURL(entry.file);
+      download.href = url;
+      download.download = entry.file.name;
+      document.body.append(download);
+      download.click();
+      download.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+      imageSaveDialog.close();
+      return;
+    }
+    imageSavePageLabel.hidden = pages.length === 1;
+    imageSaveStatus.textContent = mobile
+      ? '이미지를 길게 눌러 사진에 저장할 수 있습니다.'
+      : '페이지를 선택해 이미지를 다운로드하세요.';
+    showImageSavePage();
+  } catch (error) {
+    if (imageSaveSession === session && imageSaveDialog.open) {
+      imageSaveStatus.textContent = '이미지를 만들지 못했습니다. 창을 닫고 다시 시도하세요.';
+    }
+    console.error('이미지 저장 실패', error);
+  } finally {
+    imageSaveBusy = false;
+  }
 }
 
 let installPrompt;
 const installBtn=document.querySelector('#installBtn');
-const isStandalone=matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
+const isStandalone=matchMedia('(display-mode: standalone), (display-mode: window-controls-overlay)').matches||navigator.standalone===true;
 const isDesktopShell=/Electron/i.test(navigator.userAgent);
 if(isStandalone||isDesktopShell) installBtn.hidden=true;
 window.addEventListener('beforeinstallprompt',e=>{ e.preventDefault(); installPrompt=e; installBtn.hidden=false; });
@@ -614,7 +884,7 @@ installBtn.addEventListener('click',async()=>{
   else alert('Chrome 주소창 오른쪽의 설치 아이콘을 눌러 설치하세요.');
 });
 if('serviceWorker' in navigator&&location.protocol!=='file:') {
-  navigator.serviceWorker.register('./service-worker.js?v=15',{updateViaCache:'none'}).then(reg=>reg.update());
+  navigator.serviceWorker.register('./service-worker.js?v=16',{updateViaCache:'none'}).then(reg=>reg.update());
 }
 renderAll();
 </script>

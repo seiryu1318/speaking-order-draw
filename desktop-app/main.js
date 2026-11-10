@@ -19,6 +19,7 @@ function createWindow() {
   });
 
   Menu.setApplicationMenu(null);
+  window.on('page-title-updated', event => event.preventDefault());
   window.loadFile(path.join(process.resourcesPath, 'web', '2학년 말하기 제비뽑기.html'));
   window.webContents.setWindowOpenHandler(({ url }) => {
     shell.openExternal(url);
