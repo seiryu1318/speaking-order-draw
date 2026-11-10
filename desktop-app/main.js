@@ -8,7 +8,7 @@ function createWindow() {
     minWidth: 380,
     minHeight: 600,
     title: '제비뽑기',
-    backgroundColor: '#dfe7ed',
+    backgroundColor: '#eef1f6',
     icon: path.join(process.resourcesPath, 'web', 'icon-512.png'),
     autoHideMenuBar: true,
     webPreferences: {
