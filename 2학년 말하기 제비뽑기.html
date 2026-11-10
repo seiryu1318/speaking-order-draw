@@ -8,7 +8,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="제비뽑기">
   <title>제비뽑기</title>
-  <link rel="manifest" href="manifest.webmanifest?v=7">
+  <link rel="manifest" href="manifest.webmanifest?v=8">
   <link rel="icon" sizes="192x192" href="icon-192.png">
   <link rel="apple-touch-icon" sizes="180x180" href="icon-180.png">
   <style>
@@ -68,6 +68,14 @@
     .dialog-body h2 { margin:0 0 20px; font-size:28px; }
     .dialog-body label { display:grid; gap:7px; margin:0 0 16px; font-weight:900; }
     .dialog-body input { width:100%; border:2px solid #8fa5b7; border-radius:8px; padding:11px; font-size:20px; }
+    .type-choice { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:0 0 18px; }
+    .type-choice label { display:flex; align-items:center; justify-content:center; gap:9px; margin:0; padding:14px; border:2px solid #9fb2c1; border-radius:10px; background:#edf3f7; cursor:pointer; }
+    .type-choice input { width:22px; height:22px; margin:0; }
+    .split-add { display:flex; flex-wrap:wrap; align-items:end; gap:10px; margin:0 0 20px; padding:14px; border:2px solid var(--line); border-radius:11px; background:var(--soft); }
+    .split-add label, .class-head label { display:grid; gap:5px; font-size:17px; font-weight:900; }
+    .split-add input, .class-head input { width:105px; border:2px solid #8fa5b7; border-radius:8px; padding:8px; text-align:center; background:#fff; font-size:19px; font-weight:900; }
+    .class-actions { display:flex; flex-wrap:wrap; align-items:end; justify-content:flex-end; gap:8px; }
+    .empty-note { padding:34px 16px; border:2px dashed #9fb2c1; border-radius:12px; background:#f5f8fa; text-align:center; font-size:22px; font-weight:900; color:#536879; }
     .dialog-actions { display:flex; justify-content:flex-end; gap:10px; margin-top:22px; }
     @media (max-width:680px) {
       body { font-size:17px; }
@@ -130,7 +138,11 @@
   <form method="dialog" class="dialog-body" id="tabForm">
     <h2>탭 추가</h2>
     <label>탭 이름<input id="newTabName" maxlength="20" required autocomplete="off"></label>
-    <label>전체 인원 수<input id="newTabCount" type="number" min="1" max="200" value="10" required inputmode="numeric"></label>
+    <div class="type-choice" role="group" aria-label="탭 유형">
+      <label><input type="radio" name="tabType" value="combined" checked>합반</label>
+      <label><input type="radio" name="tabType" value="split">분반</label>
+    </div>
+    <label id="newTabCountLabel">전체 인원 수<input id="newTabCount" type="number" min="1" max="200" value="10" inputmode="numeric"></label>
     <div class="dialog-actions">
       <button class="btn light" value="cancel" type="button" id="cancelTab">취소</button>
       <button class="btn" value="default" type="submit">추가</button>
@@ -155,13 +167,18 @@ function makeRoom9() {
   const counts={};
   return DEFAULT9.map(([classNo,studentNo,name])=>({classNo,studentNo,name,order:(counts[classNo]=(counts[classNo]||0)+1)}));
 }
-const freshState = () => ({ room9:makeRoom9(), room11:makePeople(DEFAULT11), classOrder:['7','8','9'], customTabs:[{id:'direct',name:'직접 입력',people:blankPeople(10)}], active:'room9' });
+const freshState = () => ({ room9:makeRoom9(), room11:makePeople(DEFAULT11), classOrder:['7','8','9'], customTabs:[{id:'direct',name:'직접 입력',type:'combined',people:blankPeople(10)}], active:'room9' });
 let state = freshState();
 try {
   const saved = JSON.parse(localStorage.getItem(STORE_KEY));
   if (saved && Array.isArray(saved.room9) && Array.isArray(saved.room11) && Array.isArray(saved.customTabs)) state = saved;
 } catch (_) {}
-if (!state.customTabs.some(t => t.id === 'direct')) state.customTabs.unshift({id:'direct',name:'직접 입력',people:blankPeople(10)});
+if (!state.customTabs.some(t => t.id === 'direct')) state.customTabs.unshift({id:'direct',name:'직접 입력',type:'combined',people:blankPeople(10)});
+state.customTabs.forEach(tab=>{
+  tab.type=tab.type==='split'?'split':'combined';
+  if(tab.type==='combined'&&!Array.isArray(tab.people)) tab.people=blankPeople(10);
+  if(tab.type==='split'&&!Array.isArray(tab.classes)) tab.classes=[];
+});
 
 function saveState() { localStorage.setItem(STORE_KEY, JSON.stringify(state)); }
 function randomInt(max) {
@@ -206,8 +223,16 @@ function renderRoom11() {
 function customRows(tab) {
   return tab.people.map((p,i)=>`<tr><td><input class="entry class-entry" data-i="${i}" value="${escapeHtml(p.classNo)}" aria-label="${i+1}번 반"></td><td><input class="entry no-entry" data-i="${i}" value="${escapeHtml(p.studentNo)}" inputmode="numeric" aria-label="${i+1}번 학번"></td><td><input class="entry name-entry" data-i="${i}" value="${escapeHtml(p.name)}" aria-label="${i+1}번 이름"></td><td class="order-cell">${rankMarkup(p.order)}</td></tr>`).join('');
 }
+function splitRows(group) {
+  return group.people.map((p,i)=>`<tr><td>${escapeHtml(group.classNo)}</td><td><input class="entry split-no-entry" data-i="${i}" value="${escapeHtml(p.studentNo)}" inputmode="numeric" aria-label="${group.classNo}반 ${i+1}번 학번"></td><td><input class="entry split-name-entry" data-i="${i}" value="${escapeHtml(p.name)}" aria-label="${group.classNo}반 ${i+1}번 이름"></td><td class="order-cell">${rankMarkup(p.order)}</td></tr>`).join('');
+}
+function splitPanelMarkup(tab,canDelete) {
+  const cards=tab.classes.map(group=>`<article class="class-card split-class-card" data-class-id="${group.id}"><div class="class-head"><h2>${escapeHtml(group.classNo)}반</h2><div class="class-actions"><label>인원 수<input class="split-count" type="number" min="1" max="100" value="${group.people.length}" inputmode="numeric"></label><button class="btn secondary" data-action="split-resize" type="button">입력칸 만들기</button><button class="btn" data-action="split-shuffle" type="button">순서 섞기</button><button class="btn light" data-action="split-clear" type="button">명단 초기화</button><button class="btn danger" data-action="split-delete-class" type="button">반 삭제</button></div></div><div class="table-wrap"><table>${tableHead()}<tbody>${splitRows(group)}</tbody></table></div></article>`).join('');
+  return `<div class="split-add"><label>반 번호<input class="new-class-no" type="number" min="1" max="99" inputmode="numeric" placeholder="7"></label><button class="btn secondary" data-action="split-add-class" type="button">반 추가</button><button class="btn" data-action="save-image" type="button">이미지 저장</button>${canDelete?'<button class="btn danger" data-action="custom-delete" type="button">탭 삭제</button>':''}</div><div class="capture-area"><h2 class="capture-title">${escapeHtml(tab.name)}</h2>${cards||'<div class="empty-note">반 번호를 입력하고 반 추가를 누르세요.</div>'}</div>`;
+}
 function customPanelMarkup(tab) {
   const canDelete=tab.id!=='direct';
+  if(tab.type==='split') return splitPanelMarkup(tab,canDelete);
   return `<div class="direct-setup"><label>전체 인원 수<input class="custom-count" type="number" min="1" max="200" value="${tab.people.length}" inputmode="numeric"></label><button class="btn secondary" data-action="custom-resize" type="button">입력칸 만들기</button><button class="btn" data-action="custom-shuffle" type="button">전체 순서 섞기</button><button class="btn light" data-action="custom-clear" type="button">명단 초기화</button><button class="btn" data-action="save-image" type="button">이미지 저장</button>${canDelete?'<button class="btn danger" data-action="custom-delete" type="button">탭 삭제</button>':''}</div><div class="capture-area"><h2 class="capture-title">${escapeHtml(tab.name)}</h2><article class="class-card"><div class="table-wrap"><table>${tableHead()}<tbody>${customRows(tab)}</tbody></table></div></article></div>`;
 }
 function renderCustomTabs() {
@@ -229,6 +254,15 @@ function activateTab(id, persist=true) {
 function getCustom(id) { return state.customTabs.find(t=>t.id===id); }
 function syncCustomPanel(panel) {
   const tab=getCustom(panel.dataset.customId); if(!tab) return;
+  if(tab.type==='split'){
+    panel.querySelectorAll('.split-class-card').forEach(card=>{
+      const group=tab.classes.find(c=>c.id===card.dataset.classId); if(!group) return;
+      card.querySelectorAll('tbody tr').forEach((tr,i)=>{
+        if(group.people[i]) Object.assign(group.people[i],{classNo:group.classNo,studentNo:tr.querySelector('.split-no-entry')?.value.trim()||'',name:tr.querySelector('.split-name-entry')?.value.trim()||''});
+      });
+    });
+    saveState(); return;
+  }
   panel.querySelectorAll('tbody tr').forEach((tr,i)=>{
     const c=tr.querySelector('.class-entry')?.value.trim()||'';
     const no=tr.querySelector('.no-entry')?.value.trim()||'';
@@ -263,6 +297,26 @@ document.querySelector('#panels').addEventListener('click',async e=>{
     if(confirm('강의실 9 명단과 순서를 처음 상태로 되돌릴까요?')){ state.room9=makeRoom9(); state.classOrder=['7','8','9']; saveState(); renderRoom9(); }
   } else if(action==='reset-room11'){
     if(confirm('강의실 11 명단과 순서를 처음 상태로 되돌릴까요?')){ state.room11=makePeople(DEFAULT11); saveState(); renderRoom11(); }
+  } else if(action==='split-add-class'){
+    const panel=btn.closest('.custom-panel'), tab=getCustom(panel.dataset.customId), input=panel.querySelector('.new-class-no');
+    const classNo=String(Number(input.value));
+    if(!input.value||Number(input.value)<1||Number(input.value)>99){ alert('반 번호를 입력하세요.'); return; }
+    if(tab.classes.some(c=>c.classNo===classNo)){ alert('이미 추가된 반입니다.'); return; }
+    tab.classes.push({id:'class-'+Date.now(),classNo,people:blankPeople(1).map(p=>({...p,classNo}))}); saveState(); renderCustomTabs();
+  } else if(action==='split-resize'){
+    const panel=btn.closest('.custom-panel'), tab=getCustom(panel.dataset.customId), card=btn.closest('.split-class-card'), group=tab.classes.find(c=>c.id===card.dataset.classId); syncCustomPanel(panel);
+    const count=Math.max(1,Math.min(100,Number(card.querySelector('.split-count').value)||1));
+    if(count>group.people.length) group.people.push(...blankPeople(count-group.people.length).map((p,i)=>({...p,classNo:group.classNo,order:group.people.length+i+1})));
+    else group.people=group.people.slice(0,count);
+    saveState(); renderCustomTabs();
+  } else if(action==='split-shuffle'){
+    const panel=btn.closest('.custom-panel'), tab=getCustom(panel.dataset.customId), group=tab.classes.find(c=>c.id===btn.closest('.split-class-card').dataset.classId); syncCustomPanel(panel); assignRandomOrders(group.people); saveState(); renderCustomTabs();
+  } else if(action==='split-clear'){
+    const panel=btn.closest('.custom-panel'), tab=getCustom(panel.dataset.customId), group=tab.classes.find(c=>c.id===btn.closest('.split-class-card').dataset.classId);
+    if(confirm(`${group.classNo}반 명단과 순서를 초기화할까요?`)){ group.people=blankPeople(group.people.length).map(p=>({...p,classNo:group.classNo})); saveState(); renderCustomTabs(); }
+  } else if(action==='split-delete-class'){
+    const panel=btn.closest('.custom-panel'), tab=getCustom(panel.dataset.customId), group=tab.classes.find(c=>c.id===btn.closest('.split-class-card').dataset.classId);
+    if(confirm(`${group.classNo}반을 삭제할까요?`)){ tab.classes=tab.classes.filter(c=>c.id!==group.id); saveState(); renderCustomTabs(); }
   } else if(action==='custom-resize'){
     const panel=btn.closest('.custom-panel'), tab=getCustom(panel.dataset.customId); syncCustomPanel(panel);
     const count=Math.max(1,Math.min(200,Number(panel.querySelector('.custom-count').value)||1));
@@ -283,13 +337,15 @@ document.querySelector('#panels').addEventListener('click',async e=>{
 });
 
 const tabDialog=document.querySelector('#tabDialog');
-document.querySelector('#addTabBtn').addEventListener('click',()=>{ document.querySelector('#newTabName').value=''; document.querySelector('#newTabCount').value='10'; tabDialog.showModal(); setTimeout(()=>document.querySelector('#newTabName').focus(),0); });
+function updateTabTypeFields(){ document.querySelector('#newTabCountLabel').hidden=document.querySelector('input[name="tabType"]:checked').value==='split'; }
+document.querySelectorAll('input[name="tabType"]').forEach(r=>r.addEventListener('change',updateTabTypeFields));
+document.querySelector('#addTabBtn').addEventListener('click',()=>{ document.querySelector('#newTabName').value=''; document.querySelector('#newTabCount').value='10'; document.querySelector('input[name="tabType"][value="combined"]').checked=true; updateTabTypeFields(); tabDialog.showModal(); setTimeout(()=>document.querySelector('#newTabName').focus(),0); });
 document.querySelector('#cancelTab').addEventListener('click',()=>tabDialog.close());
 document.querySelector('#tabForm').addEventListener('submit',e=>{
   e.preventDefault();
-  const name=document.querySelector('#newTabName').value.trim(), count=Math.max(1,Math.min(200,Number(document.querySelector('#newTabCount').value)||1));
+  const name=document.querySelector('#newTabName').value.trim(), type=document.querySelector('input[name="tabType"]:checked').value, count=Math.max(1,Math.min(200,Number(document.querySelector('#newTabCount').value)||1));
   if(!name) return;
-  const id='custom-'+Date.now(); state.customTabs.push({id,name,people:blankPeople(count)}); state.active=id; saveState(); tabDialog.close(); renderCustomTabs();
+  const id='custom-'+Date.now(); state.customTabs.push(type==='split'?{id,name,type,classes:[]}:{id,name,type,people:blankPeople(count)}); state.active=id; saveState(); tabDialog.close(); renderCustomTabs();
 });
 
 async function savePanelImage(panel) {
@@ -312,7 +368,7 @@ installBtn.addEventListener('click',async()=>{
   else alert('Chrome 주소창 오른쪽의 설치 아이콘을 눌러 설치하세요.');
 });
 if('serviceWorker' in navigator&&location.protocol!=='file:') {
-  navigator.serviceWorker.register('./service-worker.js?v=7',{updateViaCache:'none'}).then(reg=>reg.update());
+  navigator.serviceWorker.register('./service-worker.js?v=8',{updateViaCache:'none'}).then(reg=>reg.update());
 }
 renderAll();
 </script>
