@@ -8,7 +8,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="제비뽑기">
   <title>제비뽑기</title>
-  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="manifest" href="manifest.webmanifest?v=7">
   <link rel="icon" sizes="192x192" href="icon-192.png">
   <link rel="apple-touch-icon" sizes="180x180" href="icon-180.png">
   <style>
@@ -311,7 +311,9 @@ installBtn.addEventListener('click',async()=>{
   if(/iPad|iPhone|iPod/.test(navigator.userAgent)) alert('Safari의 공유 버튼을 누른 뒤 홈 화면에 추가를 선택하세요.');
   else alert('Chrome 주소창 오른쪽의 설치 아이콘을 눌러 설치하세요.');
 });
-if('serviceWorker' in navigator&&location.protocol!=='file:') navigator.serviceWorker.register('./service-worker.js');
+if('serviceWorker' in navigator&&location.protocol!=='file:') {
+  navigator.serviceWorker.register('./service-worker.js?v=7',{updateViaCache:'none'}).then(reg=>reg.update());
+}
 renderAll();
 </script>
 </body>
