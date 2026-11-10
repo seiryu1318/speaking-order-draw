@@ -8,7 +8,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="제비뽑기">
   <title>제비뽑기</title>
-  <link rel="manifest" href="manifest.webmanifest?v=9">
+  <link rel="manifest" href="manifest.webmanifest?v=10">
   <link rel="icon" sizes="192x192" href="icon-192.png">
   <link rel="apple-touch-icon" sizes="180x180" href="icon-180.png">
   <style>
@@ -24,6 +24,11 @@
     nav { display:flex; overflow-x:auto; border-bottom:2px solid var(--line); background:#fff; position:sticky; top:0; z-index:10; scrollbar-width:thin; }
     .tab { flex:0 0 auto; min-width:155px; border:0; border-bottom:6px solid transparent; background:#fff; padding:17px 16px 13px; color:#4b5b68; font-size:20px; font-weight:900; cursor:pointer; }
     .tab.active { color:var(--navy); background:#eef5fa; border-bottom-color:var(--warm); }
+    .custom-tab-item { position:relative; display:flex; flex:0 0 auto; align-items:center; background:#fff; }
+    .custom-tab-item .tab { padding-right:48px; }
+    .tab-close { position:absolute; right:10px; top:50%; transform:translateY(-54%); display:grid; place-items:center; width:28px; height:28px; padding:0; border:0; border-radius:50%; background:#a93c3c; color:#fff; font-size:20px; line-height:1; font-weight:1000; cursor:pointer; box-shadow:0 2px 0 rgba(0,0,0,.2); }
+    .tab-close:hover { background:#842a2a; }
+    .tab-close:active { transform:translateY(-48%); box-shadow:none; }
     .add-tab { flex:0 0 auto; border:0; border-left:1px solid var(--line); background:var(--navy); color:#fff; padding:14px 19px; font-size:19px; font-weight:900; cursor:pointer; }
     main { padding:26px 28px 52px; }
     .panel { display:none; }
@@ -108,7 +113,7 @@
   <nav id="tabs" aria-label="탭 선택">
     <button class="tab active" data-tab="room9" type="button">강의실 9</button>
     <button class="tab" data-tab="room11" type="button">강의실 11</button>
-    <button class="tab" data-tab="direct" type="button">직접 입력</button>
+    <button class="tab" data-tab="direct" type="button">명단 바로 입력</button>
     <span id="customTabsNav" style="display:contents"></span>
     <button class="add-tab" id="addTabBtn" type="button">+ 탭 추가</button>
   </nav>
@@ -174,7 +179,7 @@ function makeRoom9() {
   const counts={};
   return DEFAULT9.map(([classNo,studentNo,name,excluded=false])=>({classNo,studentNo,name,excluded,order:excluded?null:(counts[classNo]=(counts[classNo]||0)+1)}));
 }
-const freshState = () => ({ room9:makeRoom9(), room11:makePeople(DEFAULT11), classOrder:['7','8','9'], customTabs:[{id:'direct',name:'직접 입력',type:'combined',people:blankPeople(10)}], active:'room9' });
+const freshState = () => ({ room9:makeRoom9(), room11:makePeople(DEFAULT11), classOrder:['7','8','9'], customTabs:[{id:'direct',name:'명단 바로 입력',type:'combined',people:blankPeople(10)}], active:'room9' });
 let state = freshState();
 try {
   const saved = JSON.parse(localStorage.getItem(STORE_KEY));
@@ -192,7 +197,8 @@ state.room9=mergeRoster(state.room9,makeRoom9());
 state.room11=mergeRoster(state.room11,makePeople(DEFAULT11));
 ['7','8','9'].forEach(classNo=>resequenceOrders(state.room9.filter(p=>p.classNo===classNo)));
 resequenceOrders(state.room11);
-if (!state.customTabs.some(t => t.id === 'direct')) state.customTabs.unshift({id:'direct',name:'직접 입력',type:'combined',people:blankPeople(10)});
+if (!state.customTabs.some(t => t.id === 'direct')) state.customTabs.unshift({id:'direct',name:'명단 바로 입력',type:'combined',people:blankPeople(10)});
+state.customTabs.find(t=>t.id==='direct').name='명단 바로 입력';
 state.customTabs.forEach(tab=>{
   tab.type=tab.type==='split'?'split':'combined';
   if(tab.type==='combined'&&!Array.isArray(tab.people)) tab.people=blankPeople(10);
@@ -253,18 +259,17 @@ function customRows(tab) {
 function splitRows(group) {
   return group.people.map((p,i)=>`<tr class="${p.excluded?'excluded-row':''}"><td>${escapeHtml(group.classNo)}</td><td><input class="entry split-no-entry" data-i="${i}" value="${escapeHtml(p.studentNo)}" inputmode="numeric" aria-label="${group.classNo}반 ${i+1}번 학번"></td><td><div class="name-with-exclude"><input class="entry split-name-entry" data-i="${i}" value="${escapeHtml(p.name)}" aria-label="${group.classNo}반 ${i+1}번 이름"><label class="exclude-label"><input class="split-exclude" type="checkbox" data-i="${i}" ${p.excluded?'checked':''}>제외</label></div></td><td class="order-cell">${rankMarkup(p.order)}</td></tr>`).join('');
 }
-function splitPanelMarkup(tab,canDelete) {
+function splitPanelMarkup(tab) {
   const cards=tab.classes.map(group=>`<article class="class-card split-class-card" data-class-id="${group.id}"><div class="class-head"><h2>${escapeHtml(group.classNo)}반</h2><div class="class-actions"><label>인원 수<input class="split-count" type="number" min="1" max="100" value="${group.people.length}" inputmode="numeric"></label><button class="btn secondary" data-action="split-resize" type="button">입력칸 만들기</button><button class="btn" data-action="split-shuffle" type="button">순서 섞기</button><button class="btn light" data-action="split-clear" type="button">명단 초기화</button><button class="btn danger" data-action="split-delete-class" type="button">반 삭제</button></div></div><div class="table-wrap"><table>${tableHead()}<tbody>${splitRows(group)}</tbody></table></div></article>`).join('');
-  return `<div class="split-add"><label>반 번호<input class="new-class-no" type="number" min="1" max="99" inputmode="numeric" placeholder="7"></label><button class="btn secondary" data-action="split-add-class" type="button">반 추가</button><button class="btn" data-action="save-image" type="button">이미지 저장</button>${canDelete?'<button class="btn danger" data-action="custom-delete" type="button">탭 삭제</button>':''}</div><div class="capture-area"><h2 class="capture-title">${escapeHtml(tab.name)}</h2>${cards||'<div class="empty-note">반 번호를 입력하고 반 추가를 누르세요.</div>'}</div>`;
+  return `<div class="split-add"><label>반 번호<input class="new-class-no" type="number" min="1" max="99" inputmode="numeric" placeholder="7"></label><button class="btn secondary" data-action="split-add-class" type="button">반 추가</button><button class="btn" data-action="save-image" type="button">이미지 저장</button></div><div class="capture-area"><h2 class="capture-title">${escapeHtml(tab.name)}</h2>${cards||'<div class="empty-note">반 번호를 입력하고 반 추가를 누르세요.</div>'}</div>`;
 }
 function customPanelMarkup(tab) {
-  const canDelete=tab.id!=='direct';
-  if(tab.type==='split') return splitPanelMarkup(tab,canDelete);
-  return `<div class="direct-setup"><label>전체 인원 수<input class="custom-count" type="number" min="1" max="200" value="${tab.people.length}" inputmode="numeric"></label><button class="btn secondary" data-action="custom-resize" type="button">입력칸 만들기</button><button class="btn" data-action="custom-shuffle" type="button">전체 순서 섞기</button><button class="btn light" data-action="custom-clear" type="button">명단 초기화</button><button class="btn" data-action="save-image" type="button">이미지 저장</button>${canDelete?'<button class="btn danger" data-action="custom-delete" type="button">탭 삭제</button>':''}</div><div class="capture-area"><h2 class="capture-title">${escapeHtml(tab.name)}</h2><article class="class-card"><div class="table-wrap"><table>${tableHead()}<tbody>${customRows(tab)}</tbody></table></div></article></div>`;
+  if(tab.type==='split') return splitPanelMarkup(tab);
+  return `<div class="direct-setup"><label>전체 인원 수<input class="custom-count" type="number" min="1" max="200" value="${tab.people.length}" inputmode="numeric"></label><button class="btn secondary" data-action="custom-resize" type="button">입력칸 만들기</button><button class="btn" data-action="custom-shuffle" type="button">전체 순서 섞기</button><button class="btn light" data-action="custom-clear" type="button">명단 초기화</button><button class="btn" data-action="save-image" type="button">이미지 저장</button></div><div class="capture-area"><h2 class="capture-title">${escapeHtml(tab.name)}</h2><article class="class-card"><div class="table-wrap"><table>${tableHead()}<tbody>${customRows(tab)}</tbody></table></div></article></div>`;
 }
 function renderCustomTabs() {
   const extras=state.customTabs.filter(t=>t.id!=='direct');
-  document.querySelector('#customTabsNav').innerHTML=extras.map(t=>`<button class="tab" data-tab="${t.id}" type="button">${escapeHtml(t.name)}</button>`).join('');
+  document.querySelector('#customTabsNav').innerHTML=extras.map(t=>`<span class="custom-tab-item"><button class="tab" data-tab="${t.id}" type="button">${escapeHtml(t.name)}</button><button class="tab-close" data-close-tab="${t.id}" type="button" aria-label="${escapeHtml(t.name)} 탭 삭제">×</button></span>`).join('');
   document.querySelector('#customPanels').innerHTML=extras.map(t=>`<section class="panel custom-panel" id="${t.id}" data-custom-id="${t.id}">${customPanelMarkup(t)}</section>`).join('');
   const direct=state.customTabs.find(t=>t.id==='direct');
   document.querySelector('#direct').innerHTML=customPanelMarkup(direct);
@@ -299,7 +304,19 @@ function syncCustomPanel(panel) {
   saveState();
 }
 
-document.querySelector('#tabs').addEventListener('click',e=>{ const btn=e.target.closest('.tab[data-tab]'); if(btn) activateTab(btn.dataset.tab); });
+document.querySelector('#tabs').addEventListener('click',e=>{
+  const close=e.target.closest('.tab-close[data-close-tab]');
+  if(close){
+    const tab=getCustom(close.dataset.closeTab); if(!tab) return;
+    if(confirm(`'${tab.name}' 탭을 삭제할까요?`)){
+      state.customTabs=state.customTabs.filter(t=>t.id!==tab.id);
+      if(state.active===tab.id) state.active='direct';
+      saveState(); renderCustomTabs();
+    }
+    return;
+  }
+  const btn=e.target.closest('.tab[data-tab]'); if(btn) activateTab(btn.dataset.tab);
+});
 document.querySelector('#panels').addEventListener('input',e=>{
   const panel=e.target.closest('.custom-panel'); if(!panel) return;
   if(e.target.classList.contains('no-entry')){
@@ -373,9 +390,6 @@ document.querySelector('#panels').addEventListener('click',async e=>{
   } else if(action==='custom-clear'){
     const panel=btn.closest('.custom-panel'), tab=getCustom(panel.dataset.customId);
     if(confirm('이 탭의 명단과 순서를 초기화할까요?')){ tab.people=blankPeople(tab.people.length); saveState(); renderCustomTabs(); }
-  } else if(action==='custom-delete'){
-    const panel=btn.closest('.custom-panel'), tab=getCustom(panel.dataset.customId);
-    if(confirm(`'${tab.name}' 탭을 삭제할까요?`)){ state.customTabs=state.customTabs.filter(t=>t.id!==tab.id); state.active='direct'; saveState(); renderCustomTabs(); }
   } else if(action==='save-image'){
     await savePanelImage(btn.closest('.panel'));
   }
@@ -413,7 +427,7 @@ installBtn.addEventListener('click',async()=>{
   else alert('Chrome 주소창 오른쪽의 설치 아이콘을 눌러 설치하세요.');
 });
 if('serviceWorker' in navigator&&location.protocol!=='file:') {
-  navigator.serviceWorker.register('./service-worker.js?v=9',{updateViaCache:'none'}).then(reg=>reg.update());
+  navigator.serviceWorker.register('./service-worker.js?v=10',{updateViaCache:'none'}).then(reg=>reg.update());
 }
 renderAll();
 </script>
