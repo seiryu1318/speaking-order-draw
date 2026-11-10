@@ -1,0 +1,52 @@
+{
+  "name": "speaking-order-draw-desktop",
+  "version": "1.0.0",
+  "description": "제비뽑기 Windows 앱",
+  "main": "main.js",
+  "private": true,
+  "scripts": {
+    "build": "electron-builder --win portable --x64"
+  },
+  "devDependencies": {
+    "electron": "^39.2.3",
+    "electron-builder": "^26.0.12"
+  },
+  "build": {
+    "appId": "kr.school.speakingorderdraw",
+    "productName": "제비뽑기",
+    "asar": true,
+    "files": [
+      "main.js",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "../2학년 말하기 제비뽑기.html",
+        "to": "web/2학년 말하기 제비뽑기.html"
+      },
+      {
+        "from": "../xlsx.full.min.js",
+        "to": "web/xlsx.full.min.js"
+      },
+      {
+        "from": "../html2canvas.min.js",
+        "to": "web/html2canvas.min.js"
+      },
+      {
+        "from": "../icon-512.png",
+        "to": "web/icon-512.png"
+      }
+    ],
+    "win": {
+      "icon": "../icon-512.png",
+      "artifactName": "제비뽑기-${version}.${ext}",
+      "target": ["portable"]
+    },
+    "portable": {
+      "requestExecutionLevel": "user"
+    },
+    "directories": {
+      "output": "dist"
+    }
+  }
+}

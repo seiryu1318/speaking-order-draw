@@ -1,0 +1,4 @@
+desktop-app/.build-tools/
+desktop-app/node_modules/
+desktop-app/dist/
+배포용/
