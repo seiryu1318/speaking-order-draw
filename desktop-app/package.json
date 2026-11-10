@@ -1,6 +1,6 @@
 {
   "name": "speaking-order-draw-desktop",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "제비뽑기 Windows 앱",
   "main": "main.js",
   "private": true,
@@ -31,6 +31,10 @@
       {
         "from": "../html2canvas.min.js",
         "to": "web/html2canvas.min.js"
+      },
+      {
+        "from": "../Sortable.min.js",
+        "to": "web/Sortable.min.js"
       },
       {
         "from": "../icon-512.png",

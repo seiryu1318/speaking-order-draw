@@ -8,7 +8,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="제비뽑기">
   <title>제비뽑기</title>
-  <link rel="manifest" href="manifest.webmanifest?v=12">
+  <link rel="manifest" href="manifest.webmanifest?v=13">
   <link rel="icon" sizes="192x192" href="icon-192.png">
   <link rel="apple-touch-icon" sizes="180x180" href="icon-180.png">
   <style>
@@ -26,6 +26,14 @@
     .tab.active { color:var(--navy); background:#eef5fa; border-bottom-color:var(--warm); }
     .custom-tab-item { position:relative; display:flex; flex:0 0 auto; align-items:center; background:#fff; }
     .custom-tab-item .tab { padding-right:48px; }
+    #sortableTabsNav { display:contents; }
+    #sortableTabsNav .tab { cursor:grab; }
+    #sortableTabsNav .tab:active { cursor:grabbing; }
+    .tab-drag-ghost { opacity:.35; }
+    .tab-drag-chosen { box-shadow:0 5px 16px rgba(18,32,46,.24); z-index:12; }
+    #sortableTabsNav { display:contents; }
+    .tab-drag-ghost { opacity:.35; background:#d6e5f0; }
+    .tab-drag-chosen { box-shadow:inset 0 -5px 0 var(--warm); }
     .tab-close { position:absolute; right:10px; top:50%; transform:translateY(-54%); display:grid; place-items:center; width:28px; height:28px; padding:0; border:0; border-radius:50%; background:#a93c3c; color:#fff; font-size:20px; line-height:1; font-weight:1000; cursor:pointer; box-shadow:0 2px 0 rgba(0,0,0,.2); }
     .tab-close:hover { background:#842a2a; }
     .tab-close:active { transform:translateY(-48%); box-shadow:none; }
@@ -159,10 +167,8 @@
     <button class="install" id="installBtn" type="button">앱 설치</button>
   </header>
   <nav id="tabs" aria-label="탭 선택">
-    <span class="custom-tab-item" data-base-tab="room9"><button class="tab active" data-tab="room9" type="button">강의실 9</button><button class="tab-close" data-close-tab="room9" type="button" aria-label="강의실 9 탭 삭제">×</button></span>
-    <span class="custom-tab-item" data-base-tab="room11"><button class="tab" data-tab="room11" type="button">강의실 11</button><button class="tab-close" data-close-tab="room11" type="button" aria-label="강의실 11 탭 삭제">×</button></span>
+    <span id="sortableTabsNav"></span>
     <span class="custom-tab-item" data-base-tab="direct"><button class="tab" data-tab="direct" type="button">명단 바로 입력</button><button class="tab-close" data-close-tab="direct" type="button" aria-label="명단 바로 입력 탭 삭제">×</button></span>
-    <span id="customTabsNav" style="display:contents"></span>
     <button class="add-tab" id="addTabBtn" type="button">+ 탭 추가</button>
   </nav>
   <main id="panels">
@@ -217,6 +223,7 @@
   </form>
 </dialog>
 
+<script src="Sortable.min.js?v=1"></script>
 <script src="xlsx.full.min.js?v=1"></script>
 <script src="html2canvas.min.js?v=1"></script>
 <script>
@@ -235,7 +242,7 @@ function makeRoom9() {
   const counts={};
   return DEFAULT9.map(([classNo,studentNo,name,excluded=false])=>({classNo,studentNo,name,excluded,order:excluded?null:(counts[classNo]=(counts[classNo]||0)+1)}));
 }
-const freshState = () => ({ room9:makeRoom9(), room11:makePeople(DEFAULT11), classOrder:['7','8','9'], customTabs:[{id:'direct',name:'명단 바로 입력',type:'combined',people:blankPeople(10)}], hiddenTabs:[], active:'room9' });
+const freshState = () => ({ room9:makeRoom9(), room11:makePeople(DEFAULT11), classOrder:['7','8','9'], customTabs:[{id:'direct',name:'명단 바로 입력',type:'combined',people:blankPeople(10)}], tabOrder:['room9','room11'], hiddenTabs:[], active:'room9' });
 let state = freshState();
 try {
   const saved = JSON.parse(localStorage.getItem(STORE_KEY));
@@ -263,6 +270,10 @@ state.customTabs.forEach(tab=>{
   if(tab.type==='combined') tab.people.forEach(p=>p.excluded=Boolean(p.excluded));
   if(tab.type==='split') tab.classes.forEach(group=>group.people.forEach(p=>p.excluded=Boolean(p.excluded)));
 });
+const initialSortableIds=['room9','room11',...state.customTabs.filter(t=>t.id!=='direct').map(t=>t.id)].filter(id=>!state.hiddenTabs.includes(id));
+if(!Array.isArray(state.tabOrder)) state.tabOrder=[];
+state.tabOrder=state.tabOrder.filter(id=>initialSortableIds.includes(id));
+initialSortableIds.forEach(id=>{ if(!state.tabOrder.includes(id)) state.tabOrder.push(id); });
 
 function saveState() { localStorage.setItem(STORE_KEY, JSON.stringify(state)); }
 function randomInt(max) {
@@ -322,22 +333,47 @@ function splitPanelMarkup(tab) {
 }
 function customPanelMarkup(tab) {
   if(tab.type==='split') return splitPanelMarkup(tab);
-  return `<div class="direct-setup"><label>전체 인원 수<input class="custom-count" type="number" min="1" max="200" value="${tab.people.length}" inputmode="numeric"></label><button class="btn secondary" data-action="custom-resize" type="button">입력칸 만들기</button><button class="btn" data-action="custom-shuffle" type="button">전체 순서 섞기</button><button class="btn light" data-action="custom-clear" type="button">명단 초기화</button><button class="btn" data-action="save-image" type="button">이미지 저장</button></div><div class="capture-area"><h2 class="capture-title">${escapeHtml(tab.name)}</h2><article class="class-card"><div class="table-wrap"><table>${tableHead()}<tbody>${customRows(tab)}</tbody></table></div></article></div>`;
+  const saveAsTab=tab.id==='direct'?'<button class="btn secondary" data-action="save-direct-tab" type="button">탭으로 저장</button>':'';
+  return `<div class="direct-setup"><label>전체 인원 수<input class="custom-count" type="number" min="1" max="200" value="${tab.people.length}" inputmode="numeric"></label><button class="btn secondary" data-action="custom-resize" type="button">입력칸 만들기</button><button class="btn" data-action="custom-shuffle" type="button">전체 순서 섞기</button>${saveAsTab}<button class="btn light" data-action="custom-clear" type="button">명단 초기화</button><button class="btn" data-action="save-image" type="button">이미지 저장</button></div><div class="capture-area"><h2 class="capture-title">${escapeHtml(tab.name)}</h2><article class="class-card"><div class="table-wrap"><table>${tableHead()}<tbody>${customRows(tab)}</tbody></table></div></article></div>`;
+}
+const baseTabNames={room9:'강의실 9',room11:'강의실 11'};
+function sortableTabMarkup(id) {
+  const tab=getCustom(id), name=baseTabNames[id]||tab?.name;
+  if(!name) return '';
+  return `<span class="custom-tab-item" data-sort-tab="${id}"><button class="tab" data-tab="${id}" type="button">${escapeHtml(name)}</button><button class="tab-close" data-close-tab="${id}" type="button" aria-label="${escapeHtml(name)} 탭 삭제">×</button></span>`;
 }
 function renderCustomTabs() {
   const extras=state.customTabs.filter(t=>t.id!=='direct');
-  document.querySelectorAll('[data-base-tab]').forEach(item=>item.hidden=state.hiddenTabs.includes(item.dataset.baseTab));
-  document.querySelector('#customTabsNav').innerHTML=extras.map(t=>`<span class="custom-tab-item"><button class="tab" data-tab="${t.id}" type="button">${escapeHtml(t.name)}</button><button class="tab-close" data-close-tab="${t.id}" type="button" aria-label="${escapeHtml(t.name)} 탭 삭제">×</button></span>`).join('');
+  const sortableIds=['room9','room11',...extras.map(t=>t.id)].filter(id=>!state.hiddenTabs.includes(id));
+  state.tabOrder=state.tabOrder.filter(id=>sortableIds.includes(id));
+  sortableIds.forEach(id=>{ if(!state.tabOrder.includes(id)) state.tabOrder.push(id); });
+  document.querySelector('#sortableTabsNav').innerHTML=state.tabOrder.map(sortableTabMarkup).join('');
+  document.querySelector('[data-base-tab="direct"]').hidden=state.hiddenTabs.includes('direct');
   document.querySelector('#customPanels').innerHTML=extras.map(t=>`<section class="panel custom-panel" id="${t.id}" data-custom-id="${t.id}">${customPanelMarkup(t)}</section>`).join('');
   const direct=state.customTabs.find(t=>t.id==='direct');
   document.querySelector('#direct').innerHTML=customPanelMarkup(direct);
-  const availableTabs=['room9','room11','direct'].filter(id=>!state.hiddenTabs.includes(id)).concat(extras.map(t=>t.id));
+  const availableTabs=[...state.tabOrder,...(state.hiddenTabs.includes('direct')?[]:['direct'])];
   const nextTab=availableTabs.includes(state.active)?state.active:availableTabs[0];
   if(nextTab) activateTab(nextTab,false);
   else {
     document.querySelectorAll('.tab,.panel').forEach(el=>el.classList.remove('active'));
     state.active=''; saveState();
   }
+}
+if(typeof Sortable!=='undefined') {
+  Sortable.create(document.querySelector('#sortableTabsNav'),{
+    animation:180,
+    draggable:'.custom-tab-item',
+    handle:'.tab',
+    filter:'.tab-close',
+    preventOnFilter:false,
+    delay:120,
+    delayOnTouchOnly:true,
+    touchStartThreshold:4,
+    ghostClass:'tab-drag-ghost',
+    chosenClass:'tab-drag-chosen',
+    onEnd(){ state.tabOrder=[...document.querySelectorAll('#sortableTabsNav [data-sort-tab]')].map(el=>el.dataset.sortTab); saveState(); }
+  });
 }
 function renderAll() { renderRoom9(); renderRoom11(); renderCustomTabs(); }
 function activateTab(id, persist=true) {
@@ -379,6 +415,7 @@ document.querySelector('#tabs').addEventListener('click',e=>{
     if(confirm(`'${name}' 탭을 삭제할까요?`)){
       if(basicNames[id]) state.hiddenTabs=[...new Set([...state.hiddenTabs,id])];
       else state.customTabs=state.customTabs.filter(t=>t.id!==id);
+      state.tabOrder=state.tabOrder.filter(tabId=>tabId!==id);
       if(state.active===id) state.active='';
       saveState(); renderCustomTabs();
     }
@@ -456,6 +493,13 @@ document.querySelector('#panels').addEventListener('click',async e=>{
     saveState(); renderCustomTabs();
   } else if(action==='custom-shuffle'){
     const panel=btn.closest('.custom-panel'), tab=getCustom(panel.dataset.customId); syncCustomPanel(panel); assignRandomOrders(tab.people); saveState(); renderCustomTabs();
+  } else if(action==='save-direct-tab'){
+    const panel=btn.closest('.custom-panel'), direct=getCustom('direct'); syncCustomPanel(panel);
+    const name=prompt('저장할 탭 이름을 입력하세요.','새 명단')?.trim();
+    if(!name) return;
+    const id='custom-'+Date.now();
+    state.customTabs.push({id,name:name.slice(0,20),type:'combined',people:direct.people.map(person=>({...person}))});
+    state.tabOrder.push(id); state.active=id; saveState(); renderCustomTabs();
   } else if(action==='custom-clear'){
     const panel=btn.closest('.custom-panel'), tab=getCustom(panel.dataset.customId);
     if(confirm('이 탭의 명단과 순서를 초기화할까요?')){ tab.people=blankPeople(tab.people.length); saveState(); renderCustomTabs(); }
@@ -473,7 +517,7 @@ document.querySelector('#tabForm').addEventListener('submit',e=>{
   e.preventDefault();
   const name=document.querySelector('#newTabName').value.trim(), type=document.querySelector('input[name="tabType"]:checked').value, count=Math.max(1,Math.min(200,Number(document.querySelector('#newTabCount').value)||1));
   if(!name) return;
-  const id='custom-'+Date.now(); state.customTabs.push(type==='split'?{id,name,type,classes:[]}:{id,name,type,people:blankPeople(count)}); state.active=id; saveState(); tabDialog.close(); renderCustomTabs();
+  const id='custom-'+Date.now(); state.customTabs.push(type==='split'?{id,name,type,classes:[]}:{id,name,type,people:blankPeople(count)}); state.tabOrder.push(id); state.active=id; saveState(); tabDialog.close(); renderCustomTabs();
 });
 
 function niceTabName(fileName) {
@@ -522,7 +566,7 @@ async function importNiceExcel(file) {
     } else {
       state.customTabs.push({id,name,type:'combined',people:people.map((p,i)=>({...p,order:i+1}))});
     }
-    state.active=id; saveState(); status.textContent=`${people.length}명을 불러왔습니다.`; tabDialog.close(); renderCustomTabs();
+    state.tabOrder.push(id); state.active=id; saveState(); status.textContent=`${people.length}명을 불러왔습니다.`; tabDialog.close(); renderCustomTabs();
   } catch(error) {
     status.textContent=error.message||'엑셀 파일을 인식하지 못했습니다.';
   }
@@ -550,7 +594,7 @@ installBtn.addEventListener('click',async()=>{
   else alert('Chrome 주소창 오른쪽의 설치 아이콘을 눌러 설치하세요.');
 });
 if('serviceWorker' in navigator&&location.protocol!=='file:') {
-  navigator.serviceWorker.register('./service-worker.js?v=12',{updateViaCache:'none'}).then(reg=>reg.update());
+  navigator.serviceWorker.register('./service-worker.js?v=13',{updateViaCache:'none'}).then(reg=>reg.update());
 }
 renderAll();
 </script>

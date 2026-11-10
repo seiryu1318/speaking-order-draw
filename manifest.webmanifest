@@ -3,7 +3,7 @@
   "name": "제비뽑기",
   "short_name": "제비뽑기",
   "description": "발표 순서 제비뽑기",
-  "start_url": "./2%ED%95%99%EB%85%84%20%EB%A7%90%ED%95%98%EA%B8%B0%20%EC%A0%9C%EB%B9%84%EB%BD%91%EA%B8%B0.html?v=12",
+  "start_url": "./2%ED%95%99%EB%85%84%20%EB%A7%90%ED%95%98%EA%B8%B0%20%EC%A0%9C%EB%B9%84%EB%BD%91%EA%B8%B0.html?v=13",
   "scope": "./",
   "display": "standalone",
   "display_override": ["window-controls-overlay", "standalone"],
