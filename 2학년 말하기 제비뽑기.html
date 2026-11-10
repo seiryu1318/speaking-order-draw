@@ -148,10 +148,14 @@ const DEFAULT9 = [
 const DEFAULT11 = [
   ['11','21101','김동주'],['11','21102','김민규'],['11','21105','김찬목'],['11','21106','박준우'],['11','21107','서형진'],['11','21108','신수환'],['11','21109','신정헌'],['11','21110','신정훈'],['11','21112','오도겸'],['11','21113','오정근'],['11','21114','오한새'],['11','21115','원준호'],['11','21116','이경욱'],['11','21117','이원찬'],['11','21118','이유찬'],['11','21119','이종수'],['11','21120','이준우'],['11','21121','이태영'],['11','21122','이혜성'],['11','21123','장윤서'],['11','21124','정권'],['11','21127','최은호'],['11','21128','최호영'],['11','21129','하준우'],['11','21130','한선규'],['11','21131','홍준우'],['11','21132','최민호']
 ];
-const STORE_KEY = 'speaking-draw-v3';
+const STORE_KEY = 'speaking-draw-v4';
 const makePeople = list => list.map((s,i) => ({ classNo:s[0], studentNo:s[1], name:s[2], order:i+1 }));
 const blankPeople = count => Array.from({length:count}, (_,i) => ({ classNo:'', studentNo:'', name:'', order:i+1 }));
-const freshState = () => ({ room9:makePeople(DEFAULT9), room11:makePeople(DEFAULT11), classOrder:['7','8','9'], customTabs:[{id:'direct',name:'직접 입력',people:blankPeople(10)}], active:'room9' });
+function makeRoom9() {
+  const counts={};
+  return DEFAULT9.map(([classNo,studentNo,name])=>({classNo,studentNo,name,order:(counts[classNo]=(counts[classNo]||0)+1)}));
+}
+const freshState = () => ({ room9:makeRoom9(), room11:makePeople(DEFAULT11), classOrder:['7','8','9'], customTabs:[{id:'direct',name:'직접 입력',people:blankPeople(10)}], active:'room9' });
 let state = freshState();
 try {
   const saved = JSON.parse(localStorage.getItem(STORE_KEY));
@@ -256,7 +260,7 @@ document.querySelector('#panels').addEventListener('click',async e=>{
   } else if(action==='shuffle-room11'){
     assignRandomOrders(state.room11); saveState(); renderRoom11();
   } else if(action==='reset-room9'){
-    if(confirm('강의실 9 명단과 순서를 처음 상태로 되돌릴까요?')){ state.room9=makePeople(DEFAULT9); state.classOrder=['7','8','9']; saveState(); renderRoom9(); }
+    if(confirm('강의실 9 명단과 순서를 처음 상태로 되돌릴까요?')){ state.room9=makeRoom9(); state.classOrder=['7','8','9']; saveState(); renderRoom9(); }
   } else if(action==='reset-room11'){
     if(confirm('강의실 11 명단과 순서를 처음 상태로 되돌릴까요?')){ state.room11=makePeople(DEFAULT11); saveState(); renderRoom11(); }
   } else if(action==='custom-resize'){
