@@ -1,8 +1,8 @@
-const CACHE='speaking-draw-v20';
+const CACHE='speaking-draw-v21';
 const APP_PAGE='./2%ED%95%99%EB%85%84%20%EB%A7%90%ED%95%98%EA%B8%B0%20%EC%A0%9C%EB%B9%84%EB%BD%91%EA%B8%B0.html';
 const FILES=[
-  './','./index.html',APP_PAGE,`${APP_PAGE}?v=20`,
-  './manifest.webmanifest?v=20','./manifest-legacy.webmanifest?v=20',
+  './','./index.html',APP_PAGE,`${APP_PAGE}?v=21`,
+  './manifest.webmanifest?v=21','./manifest-legacy.webmanifest?v=21',
   './icon.svg','./icon-180.png?v=15','./icon-192.png?v=15','./icon-512.png?v=15',
   './html2canvas.min.js?v=1','./xlsx.full.min.js?v=1','./Sortable.min.js?v=1'
 ];

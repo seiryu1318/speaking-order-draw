@@ -13,8 +13,8 @@
     const manifestLink=document.createElement('link');
     manifestLink.rel='manifest';
     manifestLink.href=new URLSearchParams(location.search).has('v')
-      ? 'manifest.webmanifest?v=20'
-      : 'manifest-legacy.webmanifest?v=20';
+      ? 'manifest.webmanifest?v=21'
+      : 'manifest-legacy.webmanifest?v=21';
     document.head.append(manifestLink);
   </script>
   <link rel="icon" sizes="192x192" href="icon-192.png?v=15">
@@ -419,7 +419,7 @@ const DEFAULT9 = [
   ['9','20923','조민수'],['9','20924','조세현'],['9','20925','최동연'],['9','20926','허석민'],['9','20927','현준'],['9','20928','황인우'],['9','20929','김하준']
 ];
 const DEFAULT11 = [
-  ['11','21101','김동주'],['11','21102','김민규'],['11','21104','김진우',true],['11','21105','김찬목'],['11','21106','박준우'],['11','21107','서형진'],['11','21108','신수환'],['11','21109','신정헌'],['11','21110','신정훈'],['11','21112','오도겸'],['11','21113','오정근'],['11','21114','오한새'],['11','21115','원준호'],['11','21116','이경욱'],['11','21117','이원찬'],['11','21118','이유찬'],['11','21119','이종수'],['11','21120','이준우'],['11','21121','이태영'],['11','21122','이혜성'],['11','21123','장윤서'],['11','21124','정권'],['11','21127','최은호'],['11','21128','최호영'],['11','21129','하준우'],['11','21130','한선규'],['11','21131','홍준우'],['11','21132','최민호']
+  ['11','21101','김동주'],['11','21102','김민규'],['11','21104','김진우',true],['11','21105','김찬목'],['11','21106','박준우'],['11','21107','서형진'],['11','21108','신수환'],['11','21109','신정헌'],['11','21110','신정훈'],['11','21112','오도겸'],['11','21113','오정근'],['11','21114','오한새'],['11','21115','원준호'],['11','21116','이경욱'],['11','21117','이원찬'],['11','21118','이유찬'],['11','21119','이종수'],['11','21120','이준우'],['11','21121','이태영'],['11','21122','이혜성'],['11','21123','장윤서'],['11','21124','정권'],['11','21125','정준우'],['11','21126','최선규'],['11','21127','최은호'],['11','21128','최호영'],['11','21129','하준우'],['11','21130','한선규'],['11','21131','홍준우'],['11','21132','최민호']
 ];
 const STORE_KEY = 'speaking-draw-v4';
 const baseTabNames = {room9:'강의실 9',room11:'강의실 11'};
@@ -429,13 +429,25 @@ function makeRoom9() {
   const counts={};
   return DEFAULT9.map(([classNo,studentNo,name,excluded=false])=>({classNo,studentNo,name,excluded,order:excluded?null:(counts[classNo]=(counts[classNo]||0)+1)}));
 }
-const freshState = () => ({ room9:makeRoom9(), room11:makePeople(DEFAULT11), classOrder:['7','8','9'], customTabs:[{id:'direct',name:'명단 바로 입력',type:'combined',people:blankPeople(10)}], tabOrder:['room9','room11'], hiddenTabs:[], active:'room9' });
+const ROSTER_REPAIR='room11-21125-21126-v1';
+const freshState = () => ({ room9:makeRoom9(), room11:makePeople(DEFAULT11), classOrder:['7','8','9'], customTabs:[{id:'direct',name:'명단 바로 입력',type:'combined',people:blankPeople(10)}], tabOrder:['room9','room11'], hiddenTabs:[], appliedMigrations:[ROSTER_REPAIR], active:'room9' });
 let state = freshState();
+let stateRepaired=false;
 try {
   const saved = JSON.parse(localStorage.getItem(STORE_KEY));
   if (saved && Array.isArray(saved.room9) && Array.isArray(saved.room11) && Array.isArray(saved.customTabs)) state = saved;
 } catch (_) {}
 if(!Array.isArray(state.hiddenTabs)) state.hiddenTabs=[];
+if(!Array.isArray(state.appliedMigrations)) state.appliedMigrations=[];
+if(!state.appliedMigrations.includes(ROSTER_REPAIR)) {
+  let nextOrder=Math.max(0,...state.room11.map(person=>Number(person.order)||0));
+  for(const [classNo,studentNo,name,excluded=false] of DEFAULT11.filter(item=>['21125','21126'].includes(item[1]))) {
+    if(!state.room11.some(person=>person.studentNo===studentNo)) state.room11.push({classNo,studentNo,name,excluded,order:excluded?null:++nextOrder});
+  }
+  state.room11.sort((a,b)=>String(a.studentNo).localeCompare(String(b.studentNo),'ko',{numeric:true}));
+  state.appliedMigrations.push(ROSTER_REPAIR);
+  stateRepaired=true;
+}
 state.hiddenTabs=state.hiddenTabs.filter(id=>id!=='direct');
 state.tabNames={...baseTabNames,...state.tabNames};
 state.fixedClassNames={...state.fixedClassNames};
@@ -456,6 +468,7 @@ state.tabOrder=state.tabOrder.filter(id=>initialSortableIds.includes(id));
 initialSortableIds.forEach(id=>{ if(!state.tabOrder.includes(id)) state.tabOrder.push(id); });
 
 function saveState() { localStorage.setItem(STORE_KEY, JSON.stringify(state)); }
+if(stateRepaired) saveState();
 const libraryLoads=new Map();
 function loadLibrary(url,errorMessage) {
   if(!libraryLoads.has(url)){
@@ -995,34 +1008,61 @@ function niceGrade(fileName) {
   return match?match[1]:'';
 }
 function normalizeHeader(value) { return String(value??'').replace(/\s/g,''); }
+function normalizeNiceInteger(value) {
+  const match=String(value??'').trim().replace(/,/g,'').match(/^0*(\d+)(?:\.0+)?(?:반|번)?$/);
+  return match?String(Number(match[1])):'';
+}
 async function importNiceExcel(file) {
   const status=document.querySelector('#niceUploadStatus');
   status.textContent='명단을 확인하고 있습니다.';
   try {
     await loadLibrary('xlsx.full.min.js?v=1','엑셀 인식 파일을 불러오지 못했습니다.');
     const workbook=XLSX.read(await file.arrayBuffer(),{type:'array'});
-    let data=null;
+    let data=null, rowIssues=[];
     for(const sheetName of workbook.SheetNames){
       const rows=XLSX.utils.sheet_to_json(workbook.Sheets[sheetName],{header:1,raw:false,defval:''});
       const headerIndex=rows.findIndex(row=>{
         const headers=row.map(normalizeHeader);
-        return headers.includes('반')&&headers.includes('번호')&&(headers.includes('성명')||headers.includes('이름'));
+        return (headers.includes('학번')||(headers.includes('반')&&headers.includes('번호')))&&(headers.includes('성명')||headers.includes('이름'));
       });
       if(headerIndex<0) continue;
-      const headers=rows[headerIndex].map(normalizeHeader), classCol=headers.indexOf('반'), numberCol=headers.indexOf('번호'), nameCol=headers.includes('성명')?headers.indexOf('성명'):headers.indexOf('이름');
-      data=rows.slice(headerIndex+1).map(row=>({classNo:String(row[classCol]??'').trim(),number:String(row[numberCol]??'').trim(),name:String(row[nameCol]??'').trim()})).filter(p=>p.classNo&&p.number&&p.name);
-      if(data.length) break;
+      const headers=rows[headerIndex].map(normalizeHeader), studentNoCol=headers.indexOf('학번'), classCol=headers.indexOf('반'), numberCol=headers.indexOf('번호'), nameCol=headers.includes('성명')?headers.indexOf('성명'):headers.indexOf('이름');
+      const parsed=[], issues=[];
+      let lastClass='';
+      rows.slice(headerIndex+1).forEach((row,index)=>{
+        const sourceRow=headerIndex+index+2, name=String(row[nameCol]??'').trim();
+        if(studentNoCol>=0) {
+          const rawStudentNo=String(row[studentNoCol]??'').trim();
+          if(!rawStudentNo&&!name) return;
+          const studentNo=normalizeNiceInteger(rawStudentNo);
+          if(!/^\d{5}$/.test(studentNo)||!name) issues.push(sourceRow);
+          else parsed.push({studentNo,classNo:deriveClass(studentNo),name,sourceRow});
+          return;
+        }
+        const rawClass=String(row[classCol]??'').trim(), rawNumber=String(row[numberCol]??'').trim();
+        if(rawClass) lastClass=normalizeNiceInteger(rawClass);
+        if(!rawClass&&!rawNumber&&!name) return;
+        const classNo=normalizeNiceInteger(rawClass)||lastClass, number=normalizeNiceInteger(rawNumber);
+        if(!classNo||!number||!name) issues.push(sourceRow);
+        else parsed.push({classNo,number,name,sourceRow});
+      });
+      if(parsed.length||issues.length){ data=parsed; rowIssues=issues; break; }
     }
-    if(!data?.length) throw new Error('반, 번호, 성명 열을 찾지 못했습니다.');
-    let grade=niceGrade(file.name);
-    if(!grade){ grade=prompt('학년을 입력하세요.','2')?.trim()||''; }
-    if(!/^[1-3]$/.test(grade)) throw new Error('파일 이름에서 학년을 확인할 수 없습니다.');
+    if(!data?.length) throw new Error('학번과 이름 또는 반, 번호, 성명 열을 찾지 못했습니다.');
+    if(rowIssues.length) throw new Error(`학번 또는 이름이 비어 있는 행이 있습니다: ${rowIssues.slice(0,8).join(', ')}행`);
+    let grade='';
+    if(data.some(person=>!person.studentNo)) {
+      grade=niceGrade(file.name);
+      if(!grade){ grade=prompt('학년을 입력하세요.','2')?.trim()||''; }
+      if(!/^[1-3]$/.test(grade)) throw new Error('파일 이름에서 학년을 확인할 수 없습니다.');
+    }
     const seen=new Set();
     const people=data.map((p,i)=>{
-      const classNo=String(Number(p.classNo)), number=String(Number(p.number));
-      const studentNo=grade+classNo.padStart(2,'0')+number.padStart(2,'0');
+      const classNo=p.classNo, studentNo=p.studentNo||(grade+classNo.padStart(2,'0')+p.number.padStart(2,'0'));
       return {classNo,studentNo,name:p.name,excluded:false,order:i+1};
-    }).filter(p=>{ if(seen.has(p.studentNo)) return false; seen.add(p.studentNo); return true; });
+    });
+    const duplicates=people.filter(person=>seen.has(person.studentNo)||!seen.add(person.studentNo)).map(person=>person.studentNo);
+    if(duplicates.length) throw new Error(`중복 학번이 있습니다: ${[...new Set(duplicates)].join(', ')}`);
     const classNos=[...new Set(people.map(p=>p.classNo))].sort((a,b)=>Number(a)-Number(b));
     const id='custom-'+Date.now(), name=niceTabName(file.name);
     if(classNos.length>1){
@@ -1205,7 +1245,7 @@ installBtn.addEventListener('click',async()=>{
   else alert('Chrome 주소창 오른쪽의 설치 아이콘을 눌러 설치하세요.');
 });
 if('serviceWorker' in navigator&&location.protocol!=='file:'&&!isDesktopShell) {
-  navigator.serviceWorker.register('./service-worker.js?v=20',{updateViaCache:'none'}).then(reg=>reg.update());
+  navigator.serviceWorker.register('./service-worker.js?v=21',{updateViaCache:'none'}).then(reg=>reg.update());
 }
 renderAll();
 </script>
