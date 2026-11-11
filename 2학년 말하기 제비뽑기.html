@@ -13,8 +13,8 @@
     const manifestLink=document.createElement('link');
     manifestLink.rel='manifest';
     manifestLink.href=new URLSearchParams(location.search).has('v')
-      ? 'manifest.webmanifest?v=17'
-      : 'manifest-legacy.webmanifest?v=17';
+      ? 'manifest.webmanifest?v=18'
+      : 'manifest-legacy.webmanifest?v=18';
     document.head.append(manifestLink);
   </script>
   <link rel="icon" sizes="192x192" href="icon-192.png?v=15">
@@ -67,7 +67,9 @@
     .class-head { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:14px 16px; background:var(--soft); border-bottom:1px solid var(--line); }
     .class-head h2 { flex:0 0 auto; max-width:min(34%,260px); margin:0; font-size:27px; overflow-wrap:anywhere; }
     .class-name-button {
-      display:inline-block;
+      display:inline-flex;
+      align-items:center;
+      gap:9px;
       min-height:44px;
       max-width:100%;
       margin:-4px 0;
@@ -78,11 +80,21 @@
       color:inherit;
       text-align:left;
       overflow-wrap:anywhere;
-      text-decoration:underline dashed #8c99b5;
-      text-underline-offset:.2em;
       cursor:pointer;
     }
-    .class-name-button:hover { background:#e0e7f5; text-decoration-color:var(--navy); }
+    .class-name-button:hover { background:#e0e7f5; }
+    .class-edit-icon {
+      display:inline-grid;
+      flex:0 0 28px;
+      place-items:center;
+      width:28px;
+      height:28px;
+      border:1px solid #aab5ca;
+      border-radius:5px;
+      background:var(--paper);
+      color:var(--blue);
+    }
+    .class-edit-icon svg { width:16px; height:16px; }
     .capture-title { margin:0 0 14px; padding:15px 18px; background:var(--navy); color:#fff; border-radius:6px; font-size:28px; letter-spacing:-.03em; }
     .table-wrap { overflow-x:auto; }
     table { width:100%; min-width:650px; border-collapse:collapse; table-layout:fixed; }
@@ -91,19 +103,50 @@
     tbody tr:nth-child(even) td { background:var(--shade); }
     tbody tr:last-child td { border-bottom:0; }
     td { font-size:22px; font-weight:700; }
-    tbody td:first-child { overflow-wrap:anywhere; }
-    td:nth-child(1), th:nth-child(1) { width:15%; }
-    td:nth-child(2), th:nth-child(2) { width:25%; }
-    td:nth-child(3), th:nth-child(3) { width:34%; }
-    td:nth-child(4), th:nth-child(4) { width:26%; }
+    td:nth-child(1), th:nth-child(1) { width:12%; }
+    td:nth-child(2), th:nth-child(2) { width:24%; }
+    td:nth-child(3), th:nth-child(3) { width:40%; }
+    td:nth-child(4), th:nth-child(4) { width:24%; }
+    td:nth-child(2), td:nth-child(3) { overflow-wrap:anywhere; }
+    .row-delete {
+      display:inline-grid;
+      place-items:center;
+      width:min(100%,40px);
+      height:40px;
+      padding:0;
+      border:1px solid #8c99b5;
+      border-radius:5px;
+      background:var(--paper);
+      color:var(--navy);
+      cursor:pointer;
+    }
+    .row-delete svg { width:17px; height:17px; }
+    .row-delete:hover { background:var(--soft); border-color:var(--navy); }
+    .roster-value {
+      display:inline-block;
+      min-height:34px;
+      max-width:100%;
+      padding:3px 2px;
+      border:1px solid transparent;
+      border-radius:4px;
+      background:transparent;
+      color:inherit;
+      text-align:center;
+      line-height:1.2;
+      overflow-wrap:anywhere;
+      cursor:text;
+    }
+    .roster-value:hover { background:var(--soft); border-color:var(--line); }
+    .row-delete:focus-visible, .roster-value:focus-visible { outline-offset:1px; }
+    .roster-footer { display:flex; flex-wrap:wrap; justify-content:flex-end; gap:8px; padding:12px 16px; border-top:1px solid var(--line); background:var(--shade); }
     td.order-cell, tbody tr:nth-child(even) td.order-cell { background:#e9edf6; border-left:1px solid var(--line); }
     th.order-head { background:var(--navy); color:#fff; letter-spacing:.08em; }
-    .name-with-exclude { display:flex; align-items:center; justify-content:center; gap:14px; }
-    .exclude-label { display:inline-flex; align-items:center; gap:5px; padding:5px 8px; border:1px solid var(--line); border-radius:5px; background:#fff; color:var(--muted); font-size:15px; font-weight:900; white-space:nowrap; cursor:pointer; }
+    .name-with-exclude { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; min-width:0; gap:10px; }
+    .name-with-exclude > .entry, .name-with-exclude > .roster-value { width:100%; min-width:0; }
+    .exclude-label { display:inline-flex; flex:0 0 auto; align-items:center; gap:5px; padding:5px 8px; border:1px solid var(--line); border-radius:5px; background:#fff; color:var(--muted); font-size:15px; font-weight:900; white-space:nowrap; cursor:pointer; }
     .exclude-label input { width:21px; height:21px; margin:0; accent-color:var(--navy); }
     .excluded-row td, tbody tr:nth-child(even).excluded-row td { background:#eef0f4; color:var(--muted); }
-    .excluded-row > td:nth-child(-n+2),
-    .excluded-row .name-with-exclude > span,
+    .excluded-row .roster-value,
     .excluded-row .entry { text-decoration:line-through; }
     .excluded-row td.order-cell, tbody tr:nth-child(even).excluded-row td.order-cell { background:#e4e8ef; }
     .rank { display:inline-grid; place-items:center; min-width:64px; height:64px; padding:0 10px; border:2px solid var(--navy); border-radius:5px; background:#fff; color:var(--navy); font-size:32px; line-height:1; font-weight:900; font-variant-numeric:tabular-nums; letter-spacing:-.04em; box-shadow:3px 3px 0 #c5cede; }
@@ -169,20 +212,37 @@
       .class-head h2 { max-width:100%; font-size:24px; }
       .class-head > .btn { align-self:flex-end; }
       .class-actions { width:100%; }
-      .toolbar .btn, .direct-actions .btn, .save-tab-row .btn, .class-actions .btn { padding:10px 12px; font-size:15px; }
+      .toolbar .btn, .direct-actions .btn, .save-tab-row .btn, .class-actions .btn, .roster-footer .btn { padding:10px 12px; font-size:15px; }
+      #room11 > .toolbar, .direct-actions {
+        display:grid;
+        grid-template-columns:minmax(0,1.2fr) repeat(3,minmax(0,1fr));
+        gap:5px;
+        align-items:stretch;
+      }
+      #room11 > .toolbar .btn, .direct-actions .btn {
+        min-width:0;
+        min-height:44px;
+        padding:7px 2px;
+        font-size:clamp(11px,3.2vw,15px);
+        line-height:1.2;
+        letter-spacing:-.03em;
+        word-break:keep-all;
+        overflow-wrap:anywhere;
+      }
+      .roster-footer { padding:10px 12px; }
       table { min-width:0; }
-      th, td { padding:8px 4px; font-size:16px; }
-      td:nth-child(1), th:nth-child(1) { width:13%; }
+      th, td { padding:8px 3px; font-size:16px; }
+      td:nth-child(1), th:nth-child(1) { width:15%; }
       td:nth-child(2), th:nth-child(2) { width:24%; }
-      td:nth-child(3), th:nth-child(3) { width:43%; }
-      td:nth-child(4), th:nth-child(4) { width:20%; }
-      .name-with-exclude { min-width:0; flex-wrap:wrap; gap:4px; }
-      .name-with-exclude > span { min-width:0; overflow-wrap:anywhere; }
+      td:nth-child(3), th:nth-child(3) { width:42%; }
+      td:nth-child(4), th:nth-child(4) { width:19%; }
+      .row-delete { width:min(100%,38px); height:38px; }
+      .roster-value { padding-inline:1px; }
+      .name-with-exclude { gap:4px; }
       .entry { padding:8px 2px; min-width:0; font-size:16px; }
-      .name-with-exclude > .entry { flex:1 1 55px; width:auto; }
       .exclude-label { min-height:32px; padding:3px 5px; gap:3px; font-size:12px; }
       .exclude-label input { width:16px; height:16px; }
-      .rank { min-width:40px; height:40px; padding:0 4px; font-size:21px; box-shadow:2px 2px 0 #c5cede; }
+      .rank { min-width:40px; height:40px; padding:0 3px; font-size:clamp(17px,5vw,21px); box-shadow:2px 2px 0 #c5cede; }
       dialog { max-height:92vh; overflow-y:auto; }
     }
     @media (max-width:420px) {
@@ -195,13 +255,14 @@
     }
     @media (prefers-reduced-motion:reduce) { .add-rows-btn.is-ready { animation:none; } button { transition:none!important; } }
     @media print {
-      header, nav, .toolbar, .direct-setup, .direct-actions, .save-tab-row, .split-add, .class-actions, .class-head .btn { display:none!important; }
+      header, nav, .toolbar, .direct-setup, .direct-actions, .save-tab-row, .split-add, .class-actions, .class-head .btn, .class-edit-icon, .roster-footer, .delete-col { display:none!important; }
       .app { box-shadow:none; }
       main { padding:0; }
       .panel { display:none!important; }
       .panel.active { display:block!important; }
       .class-card { break-inside:avoid; }
-      .class-name-button { min-height:0; margin:0; padding:0; background:transparent; text-decoration:none; }
+      .class-name-button { min-height:0; margin:0; padding:0; background:transparent; }
+      .roster-value { min-height:0; margin:0; padding:0; border:0; background:transparent; }
     }
   </style>
 </head>
@@ -294,6 +355,29 @@
   </form>
 </dialog>
 
+<dialog id="addStudentDialog" aria-labelledby="addStudentTitle">
+  <form method="dialog" class="dialog-body" id="addStudentForm">
+    <h2 id="addStudentTitle">학생 추가</h2>
+    <label>학번<input id="addStudentNo" type="text" inputmode="numeric" autocomplete="off" required></label>
+    <label>이름<input id="addStudentName" type="text" autocomplete="off" required></label>
+    <div class="dialog-actions">
+      <button class="btn light" id="cancelAddStudent" type="button">취소</button>
+      <button class="btn" type="submit">추가</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="deleteStudentDialog" aria-labelledby="deleteStudentTitle">
+  <form method="dialog" class="dialog-body" id="deleteStudentForm">
+    <h2 id="deleteStudentTitle">학생 삭제</h2>
+    <p id="deleteStudentMessage"></p>
+    <div class="dialog-actions">
+      <button class="btn light" id="cancelDeleteStudent" type="button" autofocus>취소</button>
+      <button class="btn danger" type="submit">삭제</button>
+    </div>
+  </form>
+</dialog>
+
 <dialog id="imageSaveDialog" aria-labelledby="imageSaveTitle" data-html2canvas-ignore>
   <div class="dialog-body">
     <h2 id="imageSaveTitle">이미지 저장</h2>
@@ -319,8 +403,6 @@
 </style>
 
 <script src="Sortable.min.js?v=1"></script>
-<script src="xlsx.full.min.js?v=1"></script>
-<script src="html2canvas.min.js?v=1"></script>
 <script>
 const DEFAULT9 = [
   ['7','20725','한태민'],['7','20726','홍제성'],['7','20727','홍준서'],['7','20728','황수현'],['7','20729','황유찬'],['7','20730','황인성'],
@@ -344,16 +426,6 @@ try {
   const saved = JSON.parse(localStorage.getItem(STORE_KEY));
   if (saved && Array.isArray(saved.room9) && Array.isArray(saved.room11) && Array.isArray(saved.customTabs)) state = saved;
 } catch (_) {}
-function mergeRoster(current, defaults) {
-  const old=Array.isArray(current)?current:[];
-  return defaults.map(person=>{
-    const saved=old.find(p=>p.studentNo===person.studentNo);
-    if(!saved) return person;
-    return {...person,order:saved.order,excluded:typeof saved.excluded==='boolean'?saved.excluded:person.excluded};
-  });
-}
-state.room9=mergeRoster(state.room9,makeRoom9());
-state.room11=mergeRoster(state.room11,makePeople(DEFAULT11));
 if(!Array.isArray(state.hiddenTabs)) state.hiddenTabs=[];
 state.hiddenTabs=state.hiddenTabs.filter(id=>id!=='direct');
 state.tabNames={...baseTabNames,...state.tabNames};
@@ -375,6 +447,23 @@ state.tabOrder=state.tabOrder.filter(id=>initialSortableIds.includes(id));
 initialSortableIds.forEach(id=>{ if(!state.tabOrder.includes(id)) state.tabOrder.push(id); });
 
 function saveState() { localStorage.setItem(STORE_KEY, JSON.stringify(state)); }
+const libraryLoads=new Map();
+function loadLibrary(url,errorMessage) {
+  if(!libraryLoads.has(url)){
+    libraryLoads.set(url,new Promise((resolve,reject)=>{
+      const script=document.createElement('script');
+      script.src=url;
+      script.onload=resolve;
+      script.onerror=()=>{
+        libraryLoads.delete(url);
+        script.remove();
+        reject(new Error(errorMessage));
+      };
+      document.head.append(script);
+    }));
+  }
+  return libraryLoads.get(url);
+}
 function randomInt(max) {
   if (globalThis.crypto?.getRandomValues) {
     const range=0x100000000, limit=range-(range%max), a=new Uint32Array(1);
@@ -409,24 +498,47 @@ function rankMarkup(order) {
   return n ? `<span class="rank ${n<=3?'top':''}">${n}</span>` : '<span class="rank empty">-</span>';
 }
 function classHeading(label, classNo) {
-  return `<h2><button type="button" class="class-name-button" data-action="rename-class" data-class="${escapeHtml(classNo)}" aria-haspopup="dialog" title="반 이름 변경">${escapeHtml(label)}</button></h2>`;
+  return `<h2><button type="button" class="class-name-button" data-action="rename-class" data-class="${escapeHtml(classNo)}" aria-haspopup="dialog" title="반 이름 변경"><span>${escapeHtml(label)}</span><span class="class-edit-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m15 5 4 4M4 20l4.5-1 11-11a2.8 2.8 0 0 0-4-4l-11 11L4 20Z"/></svg></span></button></h2>`;
 }
-function fixedRows(people,listName) {
-  return people.map(p=>`<tr class="${p.excluded?'excluded-row':''}"><td>${escapeHtml(state.fixedClassNames[p.classNo]||p.classNo)}</td><td>${escapeHtml(p.studentNo)}</td><td><div class="name-with-exclude"><span>${escapeHtml(p.name)}</span><label class="exclude-label"><input class="fixed-exclude" type="checkbox" data-list="${listName}" data-student="${escapeHtml(p.studentNo)}" ${p.excluded?'checked':''}>제외</label></div></td><td class="order-cell">${rankMarkup(p.order)}</td></tr>`).join('');
+function rosterField(person, field, index) {
+  const label=field==='studentNo'?'학번':'이름';
+  const value=person[field];
+  if(!value) {
+    return `<input class="entry" data-roster-field="${field}" ${field==='studentNo'?'inputmode="numeric"':''} aria-label="${index+1}번 ${label}">`;
+  }
+  return `<button class="roster-value" type="button" data-roster-field="${field}" aria-label="${escapeHtml(value)} ${label} 수정" title="더블 클릭해 ${label} 수정">${escapeHtml(value)}</button>`;
 }
-function tableHead() { return '<thead><tr><th>반</th><th>학번</th><th>이름</th><th class="order-head">순서</th></tr></thead>'; }
+function rosterRows(people) {
+  return people.map((person,index)=>{
+    const name=person.name||person.studentNo||`${index+1}번째 행`;
+    return `<tr data-row-index="${index}" class="${person.excluded?'excluded-row':''}">
+      <td class="delete-col"><button class="row-delete" data-action="delete-student" type="button" aria-label="${escapeHtml(name)} 삭제" aria-haspopup="dialog" title="삭제">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 10v7m4-7v7"/></svg>
+      </button></td>
+      <td>${rosterField(person,'studentNo',index)}</td>
+      <td><div class="name-with-exclude">${rosterField(person,'name',index)}<label class="exclude-label"><input class="roster-exclude" type="checkbox" ${person.excluded?'checked':''}>제외</label></div></td>
+      <td class="order-cell">${rankMarkup(person.order)}</td>
+    </tr>`;
+  }).join('');
+}
+function rosterTable(people) {
+  return `<div class="table-wrap"><table>
+    <thead><tr><th class="delete-col">삭제</th><th>학번</th><th>이름</th><th class="order-head">순서</th></tr></thead>
+    <tbody>${rosterRows(people)}</tbody>
+  </table></div><div class="roster-footer"><button class="btn" data-action="add-student" type="button" aria-haspopup="dialog">추가</button></div>`;
+}
 
 function renderRoom9() {
   const root=document.querySelector('#room9Capture');
   root.innerHTML=`<h2 class="capture-title">${escapeHtml(getTabName('room9'))}</h2>`+state.classOrder.map(c=>{
     const people=state.room9.filter(p=>p.classNo===c);
     const label=state.fixedClassNames[c]||`${c}반`;
-    return `<article class="class-card">
+    return `<article class="class-card" data-roster-class="${c}">
       <div class="class-head">${classHeading(label,c)}<div class="class-actions">
         <button class="btn" data-action="shuffle-class" data-class="${c}" type="button">${escapeHtml(label)} 순서 섞기</button>
         <button class="btn light" data-action="default-class-order" data-class="${c}" type="button">순서 기본값</button>
       </div></div>
-      <div class="table-wrap"><table>${tableHead()}<tbody>${fixedRows(people,'room9')}</tbody></table></div>
+      ${rosterTable(people)}
     </article>`;
   }).join('');
   state.classOrder.forEach((c,i)=>{
@@ -439,13 +551,7 @@ function renderRoom9() {
 function renderRoom11() {
   const customLabel=state.fixedClassNames['11'];
   document.querySelector('[data-action="shuffle-room11"]').textContent=customLabel?`${customLabel} 순서 섞기`:'전체 순서 섞기';
-  document.querySelector('#room11Capture').innerHTML=`<h2 class="capture-title">${escapeHtml(getTabName('room11'))}</h2><article class="class-card"><div class="class-head">${classHeading(customLabel||'11반','11')}</div><div class="table-wrap"><table>${tableHead()}<tbody>${fixedRows(state.room11,'room11')}</tbody></table></div></article>`;
-}
-function customRows(tab) {
-  return tab.people.map((p,i)=>`<tr class="${p.excluded?'excluded-row':''}"><td><input class="entry class-entry" data-i="${i}" value="${escapeHtml(p.classNo)}" aria-label="${i+1}번 반"></td><td><input class="entry no-entry" data-i="${i}" value="${escapeHtml(p.studentNo)}" inputmode="numeric" aria-label="${i+1}번 학번"></td><td><div class="name-with-exclude"><input class="entry name-entry" data-i="${i}" value="${escapeHtml(p.name)}" aria-label="${i+1}번 이름"><label class="exclude-label"><input class="custom-exclude" type="checkbox" data-i="${i}" ${p.excluded?'checked':''}>제외</label></div></td><td class="order-cell">${rankMarkup(p.order)}</td></tr>`).join('');
-}
-function splitRows(group, label) {
-  return group.people.map((p,i)=>`<tr class="${p.excluded?'excluded-row':''}"><td>${escapeHtml(group.label||group.classNo)}</td><td><input class="entry split-no-entry" data-i="${i}" value="${escapeHtml(p.studentNo)}" inputmode="numeric" aria-label="${escapeHtml(label)} ${i+1}번 학번"></td><td><div class="name-with-exclude"><input class="entry split-name-entry" data-i="${i}" value="${escapeHtml(p.name)}" aria-label="${escapeHtml(label)} ${i+1}번 이름"><label class="exclude-label"><input class="split-exclude" type="checkbox" data-i="${i}" ${p.excluded?'checked':''}>제외</label></div></td><td class="order-cell">${rankMarkup(p.order)}</td></tr>`).join('');
+  document.querySelector('#room11Capture').innerHTML=`<h2 class="capture-title">${escapeHtml(getTabName('room11'))}</h2><article class="class-card" data-roster-class="11"><div class="class-head">${classHeading(customLabel||'11반','11')}</div>${rosterTable(state.room11)}</article>`;
 }
 function splitPanelMarkup(tab) {
   const cards=tab.classes.map(group=>{
@@ -459,7 +565,7 @@ function splitPanelMarkup(tab) {
       <button class="btn light" data-action="split-clear" type="button">명단 초기화</button>
       <button class="btn danger" data-action="split-delete-class" type="button">반 삭제</button>
     </div></div>
-    <div class="table-wrap"><table>${tableHead()}<tbody>${splitRows(group,label)}</tbody></table></div>
+    ${rosterTable(group.people)}
   </article>`;
   }).join('');
   return `<div class="split-add"><label>반 번호<input class="new-class-no" type="number" min="1" max="99" inputmode="numeric" placeholder="7"></label><button class="btn secondary" data-action="split-add-class" type="button">반 추가</button><button class="btn" data-action="save-image" type="button">이미지 저장</button></div><div class="capture-area"><h2 class="capture-title">${escapeHtml(tab.name)}</h2>${cards||'<div class="empty-note">반 번호를 입력하고 반 추가를 누르세요.</div>'}</div>`;
@@ -474,7 +580,7 @@ function customPanelMarkup(tab) {
       <button class="btn light" data-action="custom-clear" type="button">명단 초기화</button>
       <button class="btn" data-action="save-image" type="button">이미지 저장</button>
     </div>
-    ${saveAsTab}<div class="capture-area"><h2 class="capture-title">${escapeHtml(tab.name)}</h2><article class="class-card"><div class="table-wrap"><table>${tableHead()}<tbody>${customRows(tab)}</tbody></table></div></article></div>`;
+    ${saveAsTab}<div class="capture-area"><h2 class="capture-title">${escapeHtml(tab.name)}</h2><article class="class-card">${rosterTable(tab.people)}</article></div>`;
 }
 function getTabName(id) {
   return Object.hasOwn(baseTabNames,id)?state.tabNames[id]:getCustom(id)?.name;
@@ -527,24 +633,66 @@ function activateTab(id, persist=true) {
   if(persist) saveState();
 }
 function getCustom(id) { return state.customTabs.find(t=>t.id===id); }
-function syncCustomPanel(panel) {
-  const tab=getCustom(panel.dataset.customId); if(!tab) return;
-  if(tab.type==='split'){
-    panel.querySelectorAll('.split-class-card').forEach(card=>{
-      const group=tab.classes.find(c=>c.id===card.dataset.classId); if(!group) return;
-      card.querySelectorAll('tbody tr').forEach((tr,i)=>{
-        if(group.people[i]) Object.assign(group.people[i],{classNo:group.classNo,studentNo:tr.querySelector('.split-no-entry')?.value.trim()||'',name:tr.querySelector('.split-name-entry')?.value.trim()||'',excluded:Boolean(tr.querySelector('.split-exclude')?.checked)});
-      });
-    });
-    saveState(); return;
-  }
-  panel.querySelectorAll('tbody tr').forEach((tr,i)=>{
-    const c=tr.querySelector('.class-entry')?.value.trim()||'';
-    const no=tr.querySelector('.no-entry')?.value.trim()||'';
-    const name=tr.querySelector('.name-entry')?.value.trim()||'';
-    if(tab.people[i]) Object.assign(tab.people[i],{classNo:c||deriveClass(no),studentNo:no,name,excluded:Boolean(tr.querySelector('.custom-exclude')?.checked)});
+function getRoster(element) {
+  const card=element.closest('.class-card');
+  const panel=card.closest('.panel');
+  const tab=getCustom(panel.dataset.customId);
+  const group=tab?.classes?.find(item=>item.id===card.dataset.classId);
+  const classNo=group?.classNo||card.dataset.rosterClass||'';
+  const list=group?.people||tab?.people||state[panel.id];
+  return {card,list,classNo,room9:panel.id==='room9'};
+}
+function rosterPeople(roster) {
+  return roster.room9?roster.list.filter(person=>person.classNo===roster.classNo):roster.list;
+}
+function rosterRecord(element,roster) {
+  const index=Number(element.closest('tr').dataset.rowIndex);
+  return {index,person:rosterPeople(roster)[index]};
+}
+function refreshRoster(roster) {
+  roster.card.querySelector('tbody').innerHTML=rosterRows(rosterPeople(roster));
+  const countInput=roster.card.querySelector('.split-count');
+  if(countInput) countInput.value=roster.list.length;
+}
+function setRosterField(person,field,value,roster) {
+  person[field]=value.trim();
+  if(field==='studentNo'&&!roster.classNo) person.classNo=deriveClass(person.studentNo)||person.classNo;
+}
+function replaceRosterField(input,person,field,index,focus=false) {
+  const name=person.name||person.studentNo||`${index+1}번째 행`;
+  input.closest('tr').querySelector('.row-delete').setAttribute('aria-label',`${name} 삭제`);
+  input.insertAdjacentHTML('beforebegin',rosterField(person,field,index));
+  const replacement=input.previousElementSibling;
+  input.remove();
+  if(focus) replacement.focus();
+}
+function editRosterField(button) {
+  const roster=getRoster(button);
+  const {index,person}=rosterRecord(button,roster);
+  const field=button.dataset.rosterField;
+  const input=document.createElement('input');
+  input.className='entry';
+  input.value=person[field];
+  input.setAttribute('aria-label',field==='studentNo'?'학번 수정':'이름 수정');
+  if(field==='studentNo') input.inputMode='numeric';
+  let cancel=false, restoreFocus=false;
+  input.addEventListener('keydown',e=>{
+    if(e.isComposing||!['Enter','Escape'].includes(e.key)) return;
+    e.preventDefault();
+    cancel=e.key==='Escape';
+    restoreFocus=true;
+    input.blur();
   });
-  saveState();
+  input.addEventListener('blur',()=>{
+    if(!cancel&&input.value.trim()){
+      setRosterField(person,field,input.value,roster);
+      saveState();
+    }
+    replaceRosterField(input,person,field,index,restoreFocus);
+  },{once:true});
+  button.replaceWith(input);
+  input.focus();
+  input.select();
 }
 
 document.querySelector('#tabs').addEventListener('click',e=>{
@@ -644,43 +792,108 @@ document.querySelector('#renameClassForm').addEventListener('submit',e=>{
   }
 });
 
-document.querySelector('#panels').addEventListener('input',e=>{
-  const panel=e.target.closest('.custom-panel'); if(!panel) return;
-  if(e.target.classList.contains('custom-count')){
-    const addButton=panel.querySelector('.add-rows-btn');
-    const ready=Number.isInteger(Number(e.target.value))&&Number(e.target.value)>0&&Number(e.target.value)<=200;
-    addButton.disabled=!ready; addButton.classList.toggle('is-ready',ready);
+const addStudentDialog=document.querySelector('#addStudentDialog');
+const addStudentForm=document.querySelector('#addStudentForm');
+const addStudentNo=document.querySelector('#addStudentNo');
+const addStudentName=document.querySelector('#addStudentName');
+const deleteStudentDialog=document.querySelector('#deleteStudentDialog');
+let addStudentRoster, deleteStudentTarget;
+document.querySelector('#cancelAddStudent').addEventListener('click',()=>addStudentDialog.close());
+document.querySelector('#cancelDeleteStudent').addEventListener('click',()=>deleteStudentDialog.close());
+addStudentForm.addEventListener('submit',e=>{
+  e.preventDefault();
+  const studentNo=addStudentNo.value.trim();
+  const name=addStudentName.value.trim();
+  if(!studentNo||!name) {
+    (studentNo?addStudentName:addStudentNo).focus();
     return;
   }
-  if(e.target.classList.contains('no-entry')){
-    const row=e.target.closest('tr'), classInput=row.querySelector('.class-entry');
-    if(!classInput.value.trim()) classInput.value=deriveClass(e.target.value);
-  }
-  syncCustomPanel(panel);
+  const roster=addStudentRoster;
+  const order=rosterPeople(roster).reduce((last,person)=>person.excluded?last:Math.max(last,Number(person.order)||0),0)+1;
+  roster.list.push({classNo:roster.classNo||deriveClass(studentNo),studentNo,name,excluded:false,order});
+  saveState();
+  refreshRoster(roster);
+  addStudentDialog.close();
 });
-document.querySelector('#panels').addEventListener('change',e=>{
-  if(e.target.classList.contains('fixed-exclude')){
-    const list=e.target.dataset.list==='room11'?state.room11:state.room9;
-    const person=list.find(p=>p.studentNo===e.target.dataset.student); if(!person) return;
-    person.excluded=e.target.checked;
-    if(e.target.dataset.list==='room11') resequenceOrders(state.room11);
-    else resequenceOrders(state.room9.filter(p=>p.classNo===person.classNo));
-    saveState(); e.target.dataset.list==='room11'?renderRoom11():renderRoom9(); return;
+document.querySelector('#deleteStudentForm').addEventListener('submit',e=>{
+  e.preventDefault();
+  const {roster,person}=deleteStudentTarget;
+  const index=roster.list.indexOf(person);
+  if(index!==-1) {
+    roster.list.splice(index,1);
+    resequenceOrders(rosterPeople(roster));
+    saveState();
+    refreshRoster(roster);
   }
-  if(!e.target.matches('.custom-exclude,.split-exclude')) return;
-  const panel=e.target.closest('.custom-panel'); if(!panel) return;
-  const tab=getCustom(panel.dataset.customId); syncCustomPanel(panel);
-  if(e.target.classList.contains('custom-exclude')) resequenceOrders(tab.people);
-  if(e.target.classList.contains('split-exclude')){
-    const group=tab.classes.find(c=>c.id===e.target.closest('.split-class-card').dataset.classId);
-    resequenceOrders(group.people);
-  }
-  saveState(); renderCustomTabs();
+  deleteStudentDialog.close();
+  roster.card.querySelector('[data-action="add-student"]').focus({preventScroll:true});
 });
-document.querySelector('#panels').addEventListener('click',async e=>{
+
+const panels=document.querySelector('#panels');
+panels.addEventListener('input',e=>{
+  const input=e.target;
+  if(input.matches('.custom-count')){
+    const addButton=input.closest('.custom-panel').querySelector('.add-rows-btn');
+    const count=Number(input.value);
+    const ready=Number.isInteger(count)&&count>0&&count<=200;
+    addButton.disabled=!ready;
+    addButton.classList.toggle('is-ready',ready);
+  } else if(input.matches('.entry[data-roster-field]')){
+    const roster=getRoster(input);
+    const {person}=rosterRecord(input,roster);
+    setRosterField(person,input.dataset.rosterField,input.value,roster);
+    saveState();
+  }
+});
+panels.addEventListener('focusout',e=>{
+  const input=e.target;
+  if(!input.matches('.entry[data-roster-field]')||!input.value.trim()) return;
+  const {index,person}=rosterRecord(input,getRoster(input));
+  replaceRosterField(input,person,input.dataset.rosterField,index);
+});
+panels.addEventListener('change',e=>{
+  if(!e.target.matches('.roster-exclude')) return;
+  const roster=getRoster(e.target);
+  const {index,person}=rosterRecord(e.target,roster);
+  person.excluded=e.target.checked;
+  resequenceOrders(rosterPeople(roster));
+  saveState();
+  refreshRoster(roster);
+  roster.card.querySelectorAll('.roster-exclude')[index]?.focus({preventScroll:true});
+});
+panels.addEventListener('dblclick',e=>{
+  const button=e.target.closest('.roster-value');
+  if(button) editRosterField(button);
+});
+let lastRosterTap;
+panels.addEventListener('click',async e=>{
+  const valueButton=e.target.closest('.roster-value');
+  if(valueButton) {
+    if(e.detail===0) editRosterField(valueButton);
+    else if(e.pointerType==='touch') {
+      const now=performance.now();
+      if(lastRosterTap?.button===valueButton&&now-lastRosterTap.time<400){
+        lastRosterTap=null;
+        editRosterField(valueButton);
+      } else lastRosterTap={button:valueButton,time:now};
+    }
+    return;
+  }
   const btn=e.target.closest('[data-action]'); if(!btn) return;
   const action=btn.dataset.action;
-  if(action==='rename-class'){
+  if(action==='add-student'){
+    addStudentRoster=getRoster(btn);
+    addStudentForm.reset();
+    addStudentDialog.showModal();
+    addStudentNo.focus();
+  } else if(action==='delete-student'){
+    const roster=getRoster(btn);
+    const {index,person}=rosterRecord(btn,roster);
+    deleteStudentTarget={roster,person};
+    const label=[person.studentNo,person.name].filter(Boolean).join(' ')||`${index+1}번째 행`;
+    document.querySelector('#deleteStudentMessage').textContent=`${label}을(를) 명단에서 삭제할까요?`;
+    deleteStudentDialog.showModal();
+  } else if(action==='rename-class'){
     openClassRename(btn);
   } else if(action==='shuffle-class'||action==='default-class-order'){
     const people=state.room9.filter(p=>p.classNo===btn.dataset.class);
@@ -707,14 +920,13 @@ document.querySelector('#panels').addEventListener('click',async e=>{
     if(tab.classes.some(c=>c.classNo===classNo)){ alert('이미 추가된 반입니다.'); return; }
     tab.classes.push({id:'class-'+Date.now(),classNo,people:blankPeople(1).map(p=>({...p,classNo}))}); saveState(); renderCustomTabs();
   } else if(action==='split-resize'){
-    const panel=btn.closest('.custom-panel'), tab=getCustom(panel.dataset.customId), card=btn.closest('.split-class-card'), group=tab.classes.find(c=>c.id===card.dataset.classId); syncCustomPanel(panel);
+    const panel=btn.closest('.custom-panel'), tab=getCustom(panel.dataset.customId), card=btn.closest('.split-class-card'), group=tab.classes.find(c=>c.id===card.dataset.classId);
     const count=Math.max(1,Math.min(100,Number(card.querySelector('.split-count').value)||1));
     if(count>group.people.length) group.people.push(...blankPeople(count-group.people.length).map((p,i)=>({...p,classNo:group.classNo,order:group.people.length+i+1})));
     else group.people=group.people.slice(0,count);
     saveState(); renderCustomTabs();
   } else if(action==='split-shuffle'||action==='split-default-order'){
     const panel=btn.closest('.custom-panel'), tab=getCustom(panel.dataset.customId), group=tab.classes.find(c=>c.id===btn.closest('.split-class-card').dataset.classId);
-    syncCustomPanel(panel);
     if(action==='split-shuffle') assignRandomOrders(group.people);
     else assignDefaultOrders(group.people);
     saveState(); renderCustomTabs();
@@ -727,19 +939,18 @@ document.querySelector('#panels').addEventListener('click',async e=>{
     const label=group.label||`${group.classNo}반`;
     if(confirm(`${label}을 삭제할까요?`)){ tab.classes=tab.classes.filter(c=>c.id!==group.id); saveState(); renderCustomTabs(); }
   } else if(action==='custom-add'){
-    const panel=btn.closest('.custom-panel'), tab=getCustom(panel.dataset.customId); syncCustomPanel(panel);
+    const panel=btn.closest('.custom-panel'), tab=getCustom(panel.dataset.customId);
     const count=Math.max(1,Math.min(200,Number(panel.querySelector('.custom-count').value)||1));
     const nextOrder=Math.max(0,...tab.people.filter(p=>!p.excluded).map(p=>Number(p.order)||0));
     tab.people.push(...blankPeople(count).map((p,i)=>({...p,order:nextOrder+i+1})));
     saveState(); renderCustomTabs();
   } else if(action==='custom-shuffle'||action==='custom-default-order'){
     const panel=btn.closest('.custom-panel'), tab=getCustom(panel.dataset.customId);
-    syncCustomPanel(panel);
     if(action==='custom-shuffle') assignRandomOrders(tab.people);
     else assignDefaultOrders(tab.people);
     saveState(); renderCustomTabs();
   } else if(action==='save-direct-tab'){
-    const panel=btn.closest('.custom-panel'), direct=getCustom('direct'); syncCustomPanel(panel);
+    const direct=getCustom('direct');
     const name=prompt('저장할 탭 이름을 입력하세요.','새 명단')?.trim();
     if(!name) return;
     const id='custom-'+Date.now();
@@ -777,9 +988,9 @@ function niceGrade(fileName) {
 function normalizeHeader(value) { return String(value??'').replace(/\s/g,''); }
 async function importNiceExcel(file) {
   const status=document.querySelector('#niceUploadStatus');
-  if(typeof XLSX==='undefined'){ status.textContent='엑셀 인식 파일을 불러오지 못했습니다.'; return; }
   status.textContent='명단을 확인하고 있습니다.';
   try {
+    await loadLibrary('xlsx.full.min.js?v=1','엑셀 인식 파일을 불러오지 못했습니다.');
     const workbook=XLSX.read(await file.arrayBuffer(),{type:'array'});
     let data=null;
     for(const sheetName of workbook.SheetNames){
@@ -930,6 +1141,7 @@ async function savePanelImage(panel) {
   imageSaveStatus.textContent = '이미지 만드는 중…';
   imageSaveDialog.showModal();
   try {
+    await loadLibrary('html2canvas.min.js?v=1','이미지 저장 기능을 불러오지 못했습니다.');
     if (typeof html2canvas !== 'function') throw new Error('이미지 저장 기능을 불러오지 못했습니다.');
     const layout = getImagePages(area, mobile);
     const { pages } = layout;
@@ -974,7 +1186,7 @@ async function savePanelImage(panel) {
 let installPrompt;
 const installBtn=document.querySelector('#installBtn');
 const isStandalone=matchMedia('(display-mode: standalone), (display-mode: window-controls-overlay)').matches||navigator.standalone===true;
-const isDesktopShell=/Electron/i.test(navigator.userAgent);
+const isDesktopShell=/Electron|DrawWebView2/i.test(navigator.userAgent);
 if(isStandalone||isDesktopShell) installBtn.hidden=true;
 window.addEventListener('beforeinstallprompt',e=>{ e.preventDefault(); installPrompt=e; installBtn.hidden=false; });
 window.addEventListener('appinstalled',()=>{ installPrompt=null; installBtn.hidden=true; });
@@ -983,8 +1195,8 @@ installBtn.addEventListener('click',async()=>{
   if(/iPad|iPhone|iPod/.test(navigator.userAgent)) alert('Safari의 공유 버튼을 누른 뒤 홈 화면에 추가를 선택하세요.');
   else alert('Chrome 주소창 오른쪽의 설치 아이콘을 눌러 설치하세요.');
 });
-if('serviceWorker' in navigator&&location.protocol!=='file:') {
-  navigator.serviceWorker.register('./service-worker.js?v=17',{updateViaCache:'none'}).then(reg=>reg.update());
+if('serviceWorker' in navigator&&location.protocol!=='file:'&&!isDesktopShell) {
+  navigator.serviceWorker.register('./service-worker.js?v=18',{updateViaCache:'none'}).then(reg=>reg.update());
 }
 renderAll();
 </script>
