@@ -71,6 +71,9 @@ try {
         [IO.Compression.ZipFileExtensions]::CreateEntryFromFile(
             $zip, (Join-Path $repoFolder $file), "web/$file", [IO.Compression.CompressionLevel]::Optimal) | Out-Null
     }
+    [IO.Compression.ZipFileExtensions]::CreateEntryFromFile(
+        $zip, (Join-Path $repoFolder '2학년 말하기 제비뽑기.html'), 'web/app.html',
+        [IO.Compression.CompressionLevel]::Optimal) | Out-Null
     foreach ($file in $runtimeFiles.Keys) {
         [IO.Compression.ZipFileExtensions]::CreateEntryFromFile(
             $zip, (Join-Path $sdkFolder $file), "runtime/$file", [IO.Compression.CompressionLevel]::Optimal) | Out-Null

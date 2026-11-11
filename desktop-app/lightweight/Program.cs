@@ -71,7 +71,8 @@ internal static class Program
             string packages = Path.Combine(dataFolder, "Packages");
             Directory.CreateDirectory(packages);
             string package = Path.Combine(packages, hash);
-            if (Directory.Exists(package)) return package;
+            if (IsCompletePackage(package)) return package;
+            if (Directory.Exists(package)) Directory.Delete(package, true);
 
             string staging = Path.Combine(packages, hash + "-" + Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(staging);
@@ -101,6 +102,15 @@ internal static class Program
                 if (Directory.Exists(staging)) Directory.Delete(staging, true);
             }
         }
+    }
+
+    private static bool IsCompletePackage(string package)
+    {
+        return File.Exists(Path.Combine(package, "web", "app.html")) &&
+            File.Exists(Path.Combine(package, "web", "Sortable.min.js")) &&
+            File.Exists(Path.Combine(package, "runtime", "Microsoft.Web.WebView2.Core.dll")) &&
+            File.Exists(Path.Combine(package, "runtime", "Microsoft.Web.WebView2.WinForms.dll")) &&
+            File.Exists(Path.Combine(package, "runtime", "WebView2Loader.dll"));
     }
 }
 
@@ -165,7 +175,7 @@ internal sealed class DrawWindow : Form
             core.NewWindowRequested += (source, request) => request.Handled = true;
             core.NavigationCompleted += NavigationCompleted;
             await PrepareMigration(core);
-            if (!IsDisposed) core.Navigate(AssetOrigin + "/index.html");
+            if (!IsDisposed) core.Navigate(AssetOrigin + "/app.html");
         }
         catch (WebView2RuntimeNotFoundException)
         {
@@ -208,7 +218,7 @@ internal sealed class DrawWindow : Form
     {
         if (!args.IsSuccess)
         {
-            loadingLabel.Text = "앱 화면을 불러오지 못했습니다.";
+            loadingLabel.Text = "앱 화면을 불러오지 못했습니다.\n" + args.WebErrorStatus;
             return;
         }
         loadingLabel.Visible = false;
