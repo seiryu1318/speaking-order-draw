@@ -8,15 +8,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="제비뽑기">
   <title>제비뽑기</title>
-  <script>
-    // The original installed app opens this page without a version parameter.
-    const manifestLink=document.createElement('link');
-    manifestLink.rel='manifest';
-    manifestLink.href=new URLSearchParams(location.search).has('v')
-      ? 'manifest.webmanifest?v=21'
-      : 'manifest-legacy.webmanifest?v=21';
-    document.head.append(manifestLink);
-  </script>
+  <link rel="manifest" href="manifest.webmanifest?v=22">
   <link rel="icon" sizes="192x192" href="icon-192.png?v=15">
   <link rel="apple-touch-icon" sizes="180x180" href="icon-180.png?v=15">
   <style>
@@ -1245,7 +1237,8 @@ installBtn.addEventListener('click',async()=>{
   else alert('Chrome 주소창 오른쪽의 설치 아이콘을 눌러 설치하세요.');
 });
 if('serviceWorker' in navigator&&location.protocol!=='file:'&&!isDesktopShell) {
-  navigator.serviceWorker.register('./service-worker.js?v=21',{updateViaCache:'none'}).then(reg=>reg.update());
+  navigator.serviceWorker.register('./service-worker.js?v=22',{scope:'./',updateViaCache:'none'})
+    .then(reg=>reg.update()).catch(()=>{});
 }
 renderAll();
 </script>
