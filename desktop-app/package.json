@@ -1,6 +1,6 @@
 {
   "name": "speaking-order-draw-desktop",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "제비뽑기 Windows 앱",
   "main": "main.js",
   "private": true,

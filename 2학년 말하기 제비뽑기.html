@@ -13,8 +13,8 @@
     const manifestLink=document.createElement('link');
     manifestLink.rel='manifest';
     manifestLink.href=new URLSearchParams(location.search).has('v')
-      ? 'manifest.webmanifest?v=19'
-      : 'manifest-legacy.webmanifest?v=19';
+      ? 'manifest.webmanifest?v=20'
+      : 'manifest-legacy.webmanifest?v=20';
     document.head.append(manifestLink);
   </script>
   <link rel="icon" sizes="192x192" href="icon-192.png?v=15">
@@ -145,7 +145,7 @@
     .roster-footer { display:flex; flex-wrap:wrap; justify-content:center; gap:8px; padding:12px 16px; border-top:1px solid var(--line); background:var(--shade); }
     td.order-cell, tbody tr:nth-child(even) td.order-cell { background:#e9edf6; border-left:1px solid var(--line); }
     th.order-head { background:var(--navy); color:#fff; letter-spacing:.08em; }
-    .name-with-exclude { --exclude-slot:74px; display:grid; grid-template-columns:minmax(0,1fr) var(--exclude-slot); align-items:center; min-width:0; gap:10px; }
+    .name-with-exclude { --exclude-slot:74px; display:grid; grid-template-columns:minmax(0,110px) var(--exclude-slot); justify-content:center; align-items:center; min-width:0; gap:8px; }
     .name-with-exclude > .entry, .name-with-exclude > .roster-value { width:100%; min-width:0; }
     .exclude-label { display:inline-flex; align-items:center; justify-content:center; gap:5px; padding:5px 8px; border:1px solid var(--line); border-radius:5px; background:#fff; color:var(--muted); font-size:15px; font-weight:900; white-space:nowrap; cursor:pointer; }
     .exclude-label input { flex:0 0 auto; width:21px; height:21px; margin:0; accent-color:var(--navy); }
@@ -1205,7 +1205,7 @@ installBtn.addEventListener('click',async()=>{
   else alert('Chrome 주소창 오른쪽의 설치 아이콘을 눌러 설치하세요.');
 });
 if('serviceWorker' in navigator&&location.protocol!=='file:'&&!isDesktopShell) {
-  navigator.serviceWorker.register('./service-worker.js?v=19',{updateViaCache:'none'}).then(reg=>reg.update());
+  navigator.serviceWorker.register('./service-worker.js?v=20',{updateViaCache:'none'}).then(reg=>reg.update());
 }
 renderAll();
 </script>
